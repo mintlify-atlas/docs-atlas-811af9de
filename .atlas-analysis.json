@@ -1,0 +1,105 @@
+{
+  "projectType": "saas",
+  "projectName": "Xtreme Fitness",
+  "projectDescription": "A full-stack fitness web application with a React frontend and Express/MongoDB backend, featuring public marketing pages, member workout management, and an admin dashboard with blog CMS, messaging, and reviews.",
+  "theme": "almond",
+  "primaryColor": "#E8441A",
+  "lightColor": "#FF6B3D",
+  "darkColor": "#B52D0A",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "architecture/overview",
+              "architecture/tech-stack",
+              "architecture/project-structure"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/public-pages",
+              "features/authentication",
+              "features/member-portal",
+              "features/admin-dashboard"
+            ]
+          },
+          {
+            "group": "Backend",
+            "pages": [
+              "backend/setup",
+              "backend/database",
+              "backend/authentication"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/auth",
+              "api/users",
+              "api/blogs",
+              "api/services",
+              "api/trainers",
+              "api/workouts",
+              "api/reviews",
+              "api/messages",
+              "api/subscriptions"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Public marketing pages (Home, About, Services, Trainers, Pricing, Blog, Contact)",
+    "Role-based authentication with JWT (Admin, Member, Guest roles)",
+    "Admin dashboard with blog CMS using Plate rich-text editor",
+    "Admin management of messages and reviews",
+    "Member portal for workout enrollment (min-side)",
+    "Express REST API with MongoDB and Mongoose data models",
+    "React frontend with TanStack Query for data fetching",
+    "Form validation with React Hook Form and Zod"
+  ],
+  "publicApiSurface": [
+    "POST /auth/login",
+    "POST /auth/token",
+    "GET /users",
+    "GET /users/:id",
+    "GET /blogs",
+    "GET /blogs/:id",
+    "POST /blogs",
+    "PUT /blogs/:id",
+    "DELETE /blogs/:id",
+    "GET /services",
+    "GET /employees",
+    "GET /workouts",
+    "GET /exercises",
+    "GET /reviews",
+    "POST /reviews",
+    "GET /messages",
+    "POST /messages",
+    "GET /subscriptions"
+  ]
+}
