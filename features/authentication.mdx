@@ -1,0 +1,223 @@
+---
+title: Authentication
+description: How login, JWT session management, and role-based route guards work in Xtreme Fitness.
+---
+
+Xtreme Fitness uses JWT-based authentication. The frontend manages session state through a React context (`AuthProvider`) and protects routes with the `RequireAuth` component.
+
+## Test credentials
+
+Three pre-seeded accounts cover each role:
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@mediacollege.dk` | `admin` |
+| Member | `member@mediacollege.dk` | `member` |
+| Guest | `guest@mediacollege.dk` | `guest` |
+
+<Warning>
+  These credentials are for development only. Do not use them in a production environment.
+</Warning>
+
+---
+
+## Login flow `/login`
+
+The login page at `/login` accepts an email address and password. Validation is handled client-side with **Zod** before the request is sent.
+
+<Steps>
+  <Step title="Submit credentials">
+    The user enters their email and password. The form validates that the email is well-formed and the password is at least 4 characters long.
+  </Step>
+  <Step title="Sign in">
+    On submission, `signIn(credentials)` is called on the auth context. This calls `authService.signIn` and receives a `token` and `user` object back from the API.
+  </Step>
+  <Step title="Store token">
+    The token is stored in `localStorage` under the key `xtreme_fitness_admin_token` via `setStoredToken`.
+  </Step>
+  <Step title="Redirect">
+    The user is sent to the page they originally tried to visit (preserved in `location.state.from`), or to their role's default destination:
+    - `admin` → `/admin`
+    - `member` → `/min-side`
+    - other → `/`
+  </Step>
+</Steps>
+
+If the user is already authenticated when they visit `/login`, the form is replaced with a confirmation message and a button to continue to their role's home area.
+
+---
+
+## Role system
+
+Every user has a `role` field on their profile. The three roles are:
+
+| Role | Default destination | Protected area |
+|---|---|---|
+| `admin` | `/admin` | `/admin/*` |
+| `member` | `/min-side` | `/min-side` |
+| `guest` | `/` | None |
+
+The auth context exposes two convenience flags derived from the user's role:
+
+```js
+isAdmin: user?.role === "admin",
+isMember: user?.role === "member",
+```
+
+---
+
+## Token storage and session restore
+
+Tokens are persisted in `localStorage`. On every page load, `AuthProvider` reads any stored token and attempts to restore the session before rendering protected content.
+
+```jsx
+// src/lib/auth/auth-context.jsx
+export function AuthProvider({ children }) {
+  const [token, setToken] = useState(() => getStoredToken());
+  const [user, setUser] = useState(null);
+  const [bootstrapping, setBootstrapping] = useState(Boolean(getStoredToken()));
+  // ...
+}
+```
+
+Session restoration follows this order:
+
+1. Call `authService.validateToken(storedToken)` to fetch a fresh user object from the API.
+2. If the API call fails, fall back to decoding the JWT payload directly in the browser.
+3. If the decoded payload has an `exp` claim that is already in the past, the token is discarded and the user is signed out.
+4. If neither approach produces a valid user, the stored token is removed and `bootstrapping` is set to `false`.
+
+While bootstrapping is in progress, protected routes render a loading screen ("Gendanner session...") instead of the guarded content.
+
+---
+
+## JWT verification (backend)
+
+The backend verifies every protected request using the `auth` middleware:
+
+```js
+// backend/lib/middleware/auth.middleware.js
+import jwt from "jsonwebtoken";
+
+const auth = (req, res, next) => {
+  const tokenHeader = req.headers["authorization"];
+  const useAuthHeader = process.env.USE_JWT !== "false";
+
+  if (useAuthHeader) {
+    if (!tokenHeader) {
+      return res.json({ status: "error", message: "No access without token." });
+    }
+    try {
+      const token = tokenHeader.split(" ")[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded;
+    } catch (err) {
+      return res.json({
+        status: "error",
+        message: "Not a valid Token - are you signed in?",
+      });
+    }
+  }
+
+  return next();
+};
+```
+
+The middleware expects the token in the `Authorization: Bearer <token>` header. Setting `USE_JWT=false` in the environment disables token checks entirely, which is useful during local development.
+
+On the frontend, the API client attaches the stored token automatically for any request made with `auth: true`:
+
+```js
+// src/lib/api/client.js
+if (auth) {
+  const token = getStoredToken();
+  if (token) {
+    requestHeaders.set("authorization", `Bearer ${token}`);
+  }
+}
+```
+
+---
+
+## RequireAuth component
+
+`RequireAuth` is a route wrapper that enforces authentication and role restrictions. It is used directly in the router to guard entire route subtrees.
+
+```jsx
+// src/features/admin/components/RequireAuth.jsx
+export default function RequireAuth({ allowRoles }) {
+  const { bootstrapping, isAuthenticated, user } = useAuth();
+  const location = useLocation();
+
+  if (bootstrapping) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface-muted text-slate-700">
+        Gendanner session...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate replace state={{ from: location.pathname }} to="/login" />;
+  }
+
+  if (allowRoles?.length && !allowRoles.includes(user?.role)) {
+    const fallback = user?.role === "admin" ? "/admin" : user?.role === "member" ? "/min-side" : "/";
+    return <Navigate replace to={fallback} />;
+  }
+
+  return <Outlet />;
+}
+```
+
+The component handles three cases:
+
+- **Bootstrapping** — renders a loading state while the session is being restored.
+- **Not authenticated** — redirects to `/login`, preserving the original path in `location.state.from` so the login page can send the user back after sign-in.
+- **Wrong role** — redirects authenticated users to the area that matches their role rather than showing a blank error page.
+
+The router applies `RequireAuth` as follows:
+
+```jsx
+// src/index.jsx
+<Route element={<RequireAuth allowRoles={["admin"]} />}>
+  <Route element={<AdminLayout />} path="admin">
+    <Route index element={<AdminDashboard />} />
+    <Route path="blogs" element={<AdminBlogs />} />
+    <Route path="messages" element={<AdminMessages />} />
+    <Route path="reviews" element={<AdminReviews />} />
+  </Route>
+</Route>
+
+<Route element={<RequireAuth allowRoles={["member"]} />}>
+  <Route element={<MemberPage />} path="min-side" />
+</Route>
+```
+
+---
+
+## useAuth hook
+
+Components access the auth context via the `useAuth` hook:
+
+```jsx
+import { useAuth } from "../../lib/auth/auth-context";
+
+const { user, isAuthenticated, isAdmin, isMember, signIn, signOut, refreshSession } = useAuth();
+```
+
+| Property | Type | Description |
+|---|---|---|
+| `token` | `string \| null` | The raw JWT string. |
+| `user` | `object \| null` | Decoded user profile (sensitive fields stripped). |
+| `bootstrapping` | `boolean` | `true` while the stored token is being validated on page load. |
+| `isAuthenticated` | `boolean` | `true` when both `token` and `user` are set. |
+| `isAdmin` | `boolean` | `true` when `user.role === "admin"`. |
+| `isMember` | `boolean` | `true` when `user.role === "member"`. |
+| `signIn(credentials)` | `async function` | Calls the sign-in API, stores the token, and updates context state. |
+| `signOut()` | `function` | Clears the token from storage and resets context state. |
+| `refreshSession()` | `async function` | Re-validates the stored token and refreshes the user object. |
+
+<Note>
+  `useAuth` throws if called outside of `AuthProvider`. Always ensure `AuthProvider` wraps the component tree before using this hook.
+</Note>

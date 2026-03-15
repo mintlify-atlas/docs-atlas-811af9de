@@ -1,0 +1,179 @@
+---
+title: Admin dashboard
+description: The admin backoffice at /admin for managing blog posts, contact messages, and customer reviews.
+---
+
+The admin dashboard is a protected backoffice at `/admin`. It is only accessible to users with the `admin` role. The admin area runs inside its own `AdminLayout`, separate from the public site shell, with a persistent sidebar on desktop and a bottom tab bar on mobile.
+
+<Info>
+  To access the dashboard during development, sign in with `admin@mediacollege.dk` / `admin`.
+</Info>
+
+## Navigation
+
+The admin layout provides four navigation destinations:
+
+| Label | Path | Icon |
+|---|---|---|
+| Dashboard | `/admin` | LayoutDashboard |
+| Blogs | `/admin/blogs` | FileText |
+| Messages | `/admin/messages` | Mail |
+| Reviews | `/admin/reviews` | MessageSquareQuote |
+
+On desktop a fixed sidebar displays the nav links, the current user's name and role, and a **Log ud** (sign out) button. On mobile, the same links appear in a sticky bottom navigation bar.
+
+A **Back to frontend** link in the sidebar lets the admin return to the public site at any time.
+
+---
+
+## Dashboard overview `/admin`
+
+The dashboard landing page gives a quick snapshot of the site's content.
+
+### Summary cards
+
+Four metric tiles are shown at the top of the page, each fetched from the `useDashboardSummaryQuery` hook:
+
+<CardGroup cols={2}>
+  <Card title="Blogs">
+    Total number of blog posts in the system.
+  </Card>
+  <Card title="Beskeder">
+    Total number of contact form submissions.
+  </Card>
+  <Card title="Ulæste">
+    Number of unread (new) messages.
+  </Card>
+  <Card title="Reviews">
+    Total number of customer reviews.
+  </Card>
+</CardGroup>
+
+### Quick-access shortcuts
+
+A panel labelled **Arbejdsgange** (Workflows) shows four shortcut tiles:
+
+- **Blogs** → `/admin/blogs`
+- **Beskeder** → `/admin/messages`
+- **Reviews** → `/admin/reviews`
+- **Se site** → `/` (view the public site)
+
+### Recent content panels
+
+Three panels show the three most recent entries of each type:
+
+- **Seneste blogs** — title and teaser for each of the latest three posts.
+- **Seneste beskeder** — sender name, subject, and a read/unread badge (`Læst` / `Ny`).
+- **Seneste reviews** — author name and review content.
+
+---
+
+## Blog management `/admin/blogs`
+
+Create, edit, and delete blog posts. The page uses a two-panel layout: the list on the left and the editor on the right.
+
+### Browsing posts
+
+- All existing posts are displayed in a searchable list (desktop) or card stack (mobile).
+- Use the search input to filter posts by title, teaser, or author name.
+- Each entry shows an **edit** button (pencil icon) and a **delete** button (bin icon).
+
+### Creating a post
+
+<Steps>
+  <Step title="Click Ny blog">
+    Click the **Ny blog** button in the top-right of the list panel. The editor panel opens with an empty form.
+  </Step>
+  <Step title="Fill in the form">
+    Enter the post title, author, teaser, cover image URL, and body content. The body is written in the **Plate** rich-text editor, which supports headings, paragraphs, and other formatted content.
+  </Step>
+  <Step title="Save">
+    Submit the form to call `blogService.create`. On success, the list and the home page blog section are both refreshed, and the editor closes.
+  </Step>
+</Steps>
+
+### Editing a post
+
+<Steps>
+  <Step title="Select a post">
+    Click the pencil icon next to any post in the list. The editor panel opens pre-filled with the post's existing data.
+  </Step>
+  <Step title="Make changes">
+    Update any field. The Plate editor reloads its initial content from the post's `content` field.
+  </Step>
+  <Step title="Save changes">
+    Submit the form to call `blogService.update`. The list and the public site are both refreshed.
+  </Step>
+</Steps>
+
+### Deleting a post
+
+Click the bin icon next to any post. The post is removed immediately via `blogService.remove`. If the deleted post was open in the editor, the editor closes.
+
+<Warning>
+  Deletion is immediate and cannot be undone.
+</Warning>
+
+<Note>
+  The Plate editor bundle is loaded lazily — it is only fetched from the server when you open the editor for the first time. This keeps the admin page lightweight on initial load.
+</Note>
+
+---
+
+## Message management `/admin/messages`
+
+View and manage contact form submissions from the public **Contact** page.
+
+The layout is a two-pane inbox:
+
+- **Left pane (Indbakke)** — lists all messages. Each item shows the sender's name, subject, and a read/unread badge. Clicking a message selects it.
+- **Right pane** — shows the full message details: sender name, email address, and the message body.
+
+On mobile the two panes are swapped using **Detaljer** / **Indbakke** tab buttons.
+
+The newest message is selected automatically when the page loads.
+
+### Actions
+
+| Button | Action |
+|---|---|
+| **Marker som læst** / **Marker som ulæst** | Toggles the `status` field on the message via `messageService.update`. The badge in the list updates immediately. |
+| **Slet besked** | Permanently deletes the message via `messageService.remove`. If the deleted message was selected, the detail pane is cleared. |
+
+---
+
+## Review management `/admin/reviews`
+
+Create, edit, and delete customer reviews. Reviews entered here are displayed publicly in the **Testimonials** section on the home page and the pricing page.
+
+<Warning>
+  Changes here take effect on the public site immediately.
+</Warning>
+
+The page uses the same two-panel layout as blog management: the review list on the left and the form on the right.
+
+### Browsing reviews
+
+All reviews are listed. Each card shows the reviewer's name, their position (or "Medlem" if none is set), and the review text. Edit and delete buttons are available on each card.
+
+### Creating a review
+
+<Steps>
+  <Step title="Click Ny review">
+    Click the **Ny review** button. The form panel opens with empty fields.
+  </Step>
+  <Step title="Fill in the form">
+    Enter the author name, their position or title, and the review content.
+  </Step>
+  <Step title="Save">
+    Submit to call `reviewService.create`. The review list and the public testimonials section are both refreshed.
+  </Step>
+</Steps>
+
+### Editing a review
+
+Click the pencil icon next to any review. The form opens pre-filled. Save to call `reviewService.update`.
+
+### Deleting a review
+
+Click the bin icon next to any review. The review is removed via `reviewService.remove` and the editor closes.

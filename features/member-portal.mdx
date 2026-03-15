@@ -1,0 +1,106 @@
+---
+title: Member portal
+description: The member-only dashboard at /min-side, where members manage their workout enrolments.
+---
+
+The member portal is a protected page at `/min-side`. It is only accessible to users with the `member` role. Visiting the URL without being signed in redirects to `/login`.
+
+<Info>
+  To access the portal during development, sign in with `member@mediacollege.dk` / `member`.
+</Info>
+
+## Accessing the portal
+
+<Steps>
+  <Step title="Go to the login page">
+    Navigate to `/login`.
+  </Step>
+  <Step title="Sign in as a member">
+    Enter `member@mediacollege.dk` as the email and `member` as the password, then click **Log ind**.
+  </Step>
+  <Step title="You are redirected automatically">
+    After a successful login, you are sent directly to `/min-side`.
+  </Step>
+</Steps>
+
+---
+
+## Page sections
+
+### My subscription
+
+Displays the member's current subscription plan. The plan's cover image and title are fetched from the backend. If no subscription is assigned, the label "Intet abonnement" (No subscription) is shown.
+
+### My enrolments
+
+A table listing every workout the member is currently enrolled in. Each row shows:
+
+| Column | Description |
+|---|---|
+| Hold | The workout class name |
+| Dag | The day of the week |
+| Tid | The scheduled time |
+| Frameld | An unenrol button |
+
+Clicking **Frameld** (unenrol) removes the member from that workout immediately. The table updates without a page reload.
+
+If the member has no enrolments, the table body shows: *"Du er ikke tilmeldt nogen hold endnu."* (You are not enrolled in any classes yet.)
+
+### Class schedule
+
+A second table lists all available workouts that the member has not yet joined. Each row shows:
+
+| Column | Description |
+|---|---|
+| Hold | The class name |
+| Dag | The day of the week |
+| Tidspunkt | The scheduled time |
+| Tilmeld | An enrol button |
+
+Clicking **Tilmeld** (enrol) adds the member to the class. The enrolments table above updates at the same time, and the enrolled class is removed from the available list.
+
+<Note>
+  Both the enrolments list and the available classes list use optimistic invalidation: after a successful mutation, `useUserDetailQuery` and `useUserWorkoutsQuery` are both invalidated, and `refreshSession` is called to keep the auth context in sync.
+</Note>
+
+---
+
+## Data flow
+
+The page uses three separate queries:
+
+| Hook | What it fetches |
+|---|---|
+| `useUserDetailQuery(userId)` | Full member profile, including the `subscription` object |
+| `useUserWorkoutsQuery(userId)` | The member's currently enrolled workouts |
+| `useWorkoutsQuery()` | All available workouts in the system |
+
+The available classes displayed in the schedule table are computed client-side by filtering out any workout whose `_id` already appears in the enrolled list:
+
+```jsx
+const availableWorkouts = useMemo(
+  () => (workoutsQuery.data || []).filter((workout) => !enrolledIds.has(workout._id)),
+  [enrolledIds, workoutsQuery.data],
+);
+```
+
+---
+
+## Tabs: role comparison
+
+<Tabs>
+  <Tab title="Member">
+    - Can view their current subscription plan.
+    - Can see all classes they are enrolled in and unenrol from any of them.
+    - Can browse the full class schedule and enrol in new classes.
+    - Cannot access `/admin` — attempting to do so redirects back to `/min-side`.
+  </Tab>
+  <Tab title="Admin">
+    - Cannot access `/min-side` — attempting to do so redirects to `/admin`.
+    - Manages workouts and other content through the admin dashboard.
+  </Tab>
+  <Tab title="Guest">
+    - Cannot access `/min-side` — redirected to `/login`.
+    - No workout enrolment features are available.
+  </Tab>
+</Tabs>

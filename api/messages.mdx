@@ -1,0 +1,238 @@
+---
+title: "Messages"
+description: "Submit and manage contact form messages"
+---
+
+Message endpoints handle inbound contact form submissions. Submitting a message does **not** require authentication, making it accessible to unauthenticated visitors. Listing, updating, and deleting messages are protected operations.
+
+<Note>
+  `PUT` and `DELETE` require a valid `Authorization: Bearer <token>` header. `POST` and `GET` on the single-resource route do not require authentication.
+</Note>
+
+---
+
+## GET /messages
+
+Returns a list of all contact messages.
+
+**Response**
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Messages fetched successfully`
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of message objects. See [message object fields](#message-object) below.
+</ResponseField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/messages
+```
+
+**Success response**
+
+```json
+{
+  "status": "ok",
+  "message": "Messages fetched successfully",
+  "data": [
+    {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "name": "Anders Andersen",
+      "email": "anders@example.com",
+      "phone": 12345678,
+      "subject": "Membership inquiry",
+      "message": "I would like to know more about your monthly plans.",
+      "status": false,
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+## GET /message/:id
+
+Fetch a single message by its MongoDB ObjectId.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the message.
+</ParamField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/message/64f1a2b3c4d5e6f7a8b9c0d1
+```
+
+---
+
+## POST /message
+
+Submit a new contact message. This endpoint does **not** require authentication.
+
+<ParamField body="name" type="string" required>
+  Full name of the sender.
+</ParamField>
+
+<ParamField body="message" type="string" required>
+  The message body.
+</ParamField>
+
+<ParamField body="email" type="string">
+  Sender's email address.
+</ParamField>
+
+<ParamField body="phone" type="number">
+  Sender's phone number.
+</ParamField>
+
+<ParamField body="subject" type="string">
+  Subject of the message.
+</ParamField>
+
+**Response** — `201 Created`
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Message created successfully`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The newly created message object.
+</ResponseField>
+
+**Example**
+
+```bash
+curl -X POST http://localhost:3042/message \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Ida Hansen",
+    "email": "ida@example.com",
+    "phone": 87654321,
+    "subject": "Personal training session",
+    "message": "I am interested in booking a personal training session. Please contact me."
+  }'
+```
+
+---
+
+## PUT /message
+
+Update an existing message. Typically used by admins to mark a message as read (`status: true`) or to edit its fields. At least one of `email`, `message`, or `status` must be provided.
+
+<ParamField body="id" type="string" required>
+  MongoDB ObjectId of the message to update.
+</ParamField>
+
+<ParamField body="name" type="string">
+  Updated sender name.
+</ParamField>
+
+<ParamField body="email" type="string">
+  Updated email address.
+</ParamField>
+
+<ParamField body="phone" type="number">
+  Updated phone number.
+</ParamField>
+
+<ParamField body="subject" type="string">
+  Updated subject.
+</ParamField>
+
+<ParamField body="message" type="string">
+  Updated message body.
+</ParamField>
+
+<ParamField body="status" type="boolean">
+  Read/handled status. Set to `true` to mark the message as resolved.
+</ParamField>
+
+**Example — mark as read**
+
+```bash
+curl -X PUT http://localhost:3042/message \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "64f1a2b3c4d5e6f7a8b9c0d1", "status": true}'
+```
+
+---
+
+## DELETE /message/:id
+
+Permanently delete a message.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the message to delete.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X DELETE http://localhost:3042/message/64f1a2b3c4d5e6f7a8b9c0d1 \
+  -H "Authorization: Bearer <token>"
+```
+
+**Success response**
+
+```json
+{
+  "status": "ok",
+  "message": "Message deleted successfully",
+  "data": { "_id": "64f1a2b3c4d5e6f7a8b9c0d1", "name": "Ida Hansen" }
+}
+```
+
+---
+
+## Message object
+
+<ResponseField name="_id" type="string">
+  MongoDB ObjectId.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Sender's full name.
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Sender's email address. Optional.
+</ResponseField>
+
+<ResponseField name="phone" type="number">
+  Sender's phone number. Optional.
+</ResponseField>
+
+<ResponseField name="subject" type="string">
+  Message subject. Optional.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Message body.
+</ResponseField>
+
+<ResponseField name="status" type="boolean">
+  Whether the message has been handled. Defaults to `false`.
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 last-updated timestamp.
+</ResponseField>

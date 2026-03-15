@@ -1,0 +1,132 @@
+---
+title: Public pages
+description: The public-facing marketing pages of Xtreme Fitness and what each one contains.
+---
+
+All public pages share the site-wide `Layout` component, which includes the top navigation and footer. Each page is lazy-loaded for faster initial load times.
+
+## Route overview
+
+| Page | Path |
+|---|---|
+| Home | `/` |
+| Services | `/tjenester` |
+| Trainers | `/traenere` |
+| Pricing | `/priser` |
+| Blog list | `/blog` |
+| Blog detail | `/blog/:blogId` |
+| About | `/om-os` |
+| Contact | `/kontakt` |
+
+---
+
+## Home page `/`
+
+The home page is the primary landing page for Xtreme Fitness. It composes multiple data-driven sections, each fetching its own data independently.
+
+<CardGroup cols={2}>
+  <Card title="Hero section">
+    Full-screen hero with the headline "Bliv Stærk" (Get Strong), a description of the gym, and a call-to-action button linking to `/priser`.
+  </Card>
+  <Card title="Exercise carousel">
+    A horizontally scrollable carousel of exercises fetched from the backend. Shows a loading skeleton while data is pending.
+  </Card>
+  <Card title="Welcome stats">
+    A highlights strip with four key figures: 600K+ work hours, 790+ programmes, 2560+ happy customers, and 830+ healthier bodies.
+  </Card>
+  <Card title="Services grid">
+    A grid of services fetched from the backend, each displayed as a card.
+  </Card>
+  <Card title="Testimonials">
+    Customer reviews fetched from the backend and displayed in a carousel.
+  </Card>
+  <Card title="Membership plans">
+    Subscription tiers fetched from the backend, each with a name and image.
+  </Card>
+  <Card title="Team section">
+    Trainer profiles fetched from the backend.
+  </Card>
+  <Card title="Contact section">
+    An inline contact form.
+  </Card>
+</CardGroup>
+
+<Note>
+  The blog section at the bottom of the home page shows the three most recent posts (`useLatestBlogsQuery(3)`).
+</Note>
+
+---
+
+## About page `/om-os`
+
+Introduces the gym and its story.
+
+- **Hero** — page header with the title "Om Os" and a background image.
+- **Intro section** — welcome text: *"Xtreme Fitness er stedet, hvor sved, grin og god musik går hånd i hånd."*
+- **Stats + video section** — four stats (600K+ work hours, 790+ successful programmes, 2560+ happy customers, 830+ healthier bodies) alongside a video embed.
+- **Contact section** — inline contact form.
+- **Latest blogs** — the three most recent blog posts.
+
+---
+
+## Services page `/tjenester`
+
+Details the training services and classes on offer.
+
+- **Hero** — page header with the title "Tjenester".
+- **Exercise carousel** — browsable list of exercises fetched from the backend.
+- **Services grid** — all available services fetched from the backend.
+- **Testimonials** — customer reviews.
+- **Latest blogs** — the three most recent blog posts.
+
+---
+
+## Trainers page `/traenere`
+
+Profiles the gym's coaching team.
+
+- **Hero** — page header with the title "Trænere".
+- **Team section** — up to six trainer profiles fetched from the backend, each with a photo, name, and role.
+- **Contact section** — inline contact form.
+- **Latest blogs** — the three most recent blog posts.
+
+---
+
+## Pricing page `/priser`
+
+Shows the membership tiers available for sign-up.
+
+- **Hero** — page header with the title "Priser".
+- **Membership plans** — all subscription plans fetched from the backend, presented as selectable cards.
+- **Testimonials** — customer reviews to support purchasing decisions.
+- **Latest blogs** — the three most recent blog posts.
+
+---
+
+## Blog list `/blog`
+
+An index of all published blog posts.
+
+- **Hero** — page header with the title "Blog".
+- **Featured post** — the first post in the list is displayed as a large hero card with its cover image, title, and teaser. Clicking it navigates to `/blog/:blogId`.
+- **All posts grid** — every post rendered in a repeating grid via `BlogPostsSection` with the heading "Alle Blogindlæg".
+
+<Tip>
+  When no posts exist, a notice is displayed instead of the featured card. Fetch errors also surface inline in the same location.
+</Tip>
+
+---
+
+## Blog detail `/blog/:blogId`
+
+Renders a single blog post identified by its `blogId` URL parameter.
+
+- **Hero** — uses the post's own cover image when available, falling back to the services header image. The hero title is the post title.
+- **Post body** — displays the post's cover image, title, teaser, and rich-text content. The `content` field is sanitised with **DOMPurify** before being injected via `dangerouslySetInnerHTML`, so admin-authored HTML is safe to render.
+- **Error state** — if the post cannot be found or fetched, a notice is shown with a **"Tilbage til blog"** link back to `/blog`.
+
+---
+
+## Contact page `/kontakt`
+
+A dedicated contact page. It renders a standalone contact form where visitors can send a message directly to the gym. Submitted messages appear in the admin inbox at `/admin/messages`.

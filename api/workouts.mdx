@@ -1,0 +1,386 @@
+---
+title: "Workouts & Exercises"
+description: "Manage workout classes and individual exercises"
+---
+
+This page covers two related resources:
+
+- **Workouts** — scheduled class sessions (title, description, weekday, time)
+- **Exercises** — individual exercise entries with instructional content
+
+Read operations are public; write operations require authentication.
+
+<Note>
+  `POST`, `PUT`, and `DELETE` require a valid `Authorization: Bearer <token>` header.
+</Note>
+
+---
+
+## Workouts
+
+### GET /workouts
+
+Returns a list of all workout classes.
+
+**Response**
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Workouts fetched successfully`
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of workout objects. See [workout object fields](#workout-object) below.
+</ResponseField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/workouts
+```
+
+**Success response**
+
+```json
+{
+  "status": "ok",
+  "message": "Workouts fetched successfully",
+  "data": [
+    {
+      "_id": "64f9a1b2c3d4e5f6a7b8c9d0",
+      "title": "Morning HIIT",
+      "description": "High-intensity interval training to kickstart your day.",
+      "weekday": "Monday",
+      "time": "07:00",
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### GET /workout/:id
+
+Fetch a single workout by its MongoDB ObjectId.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the workout.
+</ParamField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/workout/64f9a1b2c3d4e5f6a7b8c9d0
+```
+
+---
+
+### POST /workout
+
+Create a new workout class.
+
+<ParamField body="title" type="string" required>
+  Name of the workout class.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Description of what the class involves.
+</ParamField>
+
+<ParamField body="weekday" type="string">
+  Day of the week the class runs, e.g. `Monday`.
+</ParamField>
+
+<ParamField body="time" type="string">
+  Start time of the class, e.g. `07:00`.
+</ParamField>
+
+**Response** — `201 Created`
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Workout created successfully`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The newly created workout object.
+</ResponseField>
+
+**Example**
+
+```bash
+curl -X POST http://localhost:3042/workout \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Evening Yoga",
+    "description": "Relax and restore with this evening yoga session.",
+    "weekday": "Wednesday",
+    "time": "19:00"
+  }'
+```
+
+---
+
+### PUT /workout
+
+Update an existing workout. The workout `id` and `title` must be provided.
+
+<ParamField body="id" type="string" required>
+  MongoDB ObjectId of the workout to update.
+</ParamField>
+
+<ParamField body="title" type="string" required>
+  Updated title.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Updated description.
+</ParamField>
+
+<ParamField body="weekday" type="string">
+  Updated weekday.
+</ParamField>
+
+<ParamField body="time" type="string">
+  Updated time.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X PUT http://localhost:3042/workout \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "64f9a1b2c3d4e5f6a7b8c9d0", "title": "Evening Yoga (Beginners)", "time": "18:30"}'
+```
+
+---
+
+### DELETE /workout/:id
+
+Permanently delete a workout class.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the workout to delete.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X DELETE http://localhost:3042/workout/64f9a1b2c3d4e5f6a7b8c9d0 \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+### Workout object
+
+<ResponseField name="_id" type="string">
+  MongoDB ObjectId.
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Name of the class.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Description of the class.
+</ResponseField>
+
+<ResponseField name="weekday" type="string">
+  Day of the week.
+</ResponseField>
+
+<ResponseField name="time" type="string">
+  Start time.
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 last-updated timestamp.
+</ResponseField>
+
+---
+
+## Exercises
+
+### GET /exercises
+
+Returns a list of all exercises.
+
+**Response**
+
+<ResponseField name="message" type="string">
+  `Exercises fetched successfully`
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of exercise objects. See [exercise object fields](#exercise-object) below.
+</ResponseField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/exercises
+```
+
+---
+
+### GET /exercise/:id
+
+Fetch a single exercise by its MongoDB ObjectId.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the exercise.
+</ParamField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/exercise/64e8b0a1c2d3e4f5a6b7c8d9
+```
+
+---
+
+### POST /exercise
+
+Create a new exercise entry. Accepts `multipart/form-data` to optionally upload a demonstration image.
+
+<ParamField body="title" type="string" required>
+  Name of the exercise.
+</ParamField>
+
+<ParamField body="content" type="string" required>
+  Full instructional content.
+</ParamField>
+
+<ParamField body="teaser" type="string" required>
+  Short description shown in listing views.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Optional demonstration image (multipart upload). Defaults to `no-image.png` if omitted.
+</ParamField>
+
+**Response** — `201 Created`
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Exercise created successfully`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The newly created exercise object.
+</ResponseField>
+
+**Example**
+
+```bash
+curl -X POST http://localhost:3042/exercise \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Barbell Squat",
+    "teaser": "A foundational lower-body compound movement.",
+    "content": "Stand with feet shoulder-width apart, bar resting on upper traps..."
+  }'
+```
+
+---
+
+### PUT /exercise
+
+Update an existing exercise. The exercise `id` must be provided; all other fields are optional.
+
+<ParamField body="id" type="string" required>
+  MongoDB ObjectId of the exercise to update.
+</ParamField>
+
+<ParamField body="title" type="string">
+  Updated title.
+</ParamField>
+
+<ParamField body="teaser" type="string">
+  Updated teaser.
+</ParamField>
+
+<ParamField body="content" type="string">
+  Updated instructional content.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Replacement demonstration image (multipart upload). The previous image is deleted from the server.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X PUT http://localhost:3042/exercise \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "64e8b0a1c2d3e4f5a6b7c8d9", "teaser": "The king of all lower-body exercises."}'
+```
+
+---
+
+### DELETE /exercise/:id
+
+Permanently delete an exercise. The associated image is also removed from the server.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the exercise to delete.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X DELETE http://localhost:3042/exercise/64e8b0a1c2d3e4f5a6b7c8d9 \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+### Exercise object
+
+<ResponseField name="_id" type="string">
+  MongoDB ObjectId.
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Name of the exercise.
+</ResponseField>
+
+<ResponseField name="teaser" type="string">
+  Short description.
+</ResponseField>
+
+<ResponseField name="content" type="string">
+  Full instructional content.
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  URL of the demonstration image.
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 last-updated timestamp.
+</ResponseField>

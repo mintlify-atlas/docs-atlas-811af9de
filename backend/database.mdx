@@ -1,0 +1,196 @@
+---
+title: "Database"
+description: "MongoDB data models, connection setup, and database seeding for Xtreme Fitness."
+---
+
+The Xtreme Fitness backend uses **MongoDB** with the **Mongoose** ODM. All models are defined in `lib/db/models/` as `.mjs` files and include timestamps (`createdAt`, `updatedAt`) by default.
+
+## Connection
+
+The database connection is handled in `lib/db/dbConnect.js`. It reads `MONGODB_URI` from `.env.local` and caches the connection to avoid opening multiple connections during the server lifetime.
+
+```javascript lib/db/dbConnect.js
+import mongoose from "mongoose";
+import * as dotenv from "dotenv";
+dotenv.config({ path: `.env.local`, override: true });
+
+if (!process.env.MONGODB_URI) {
+  throw new Error(
+    "Please define the MONGODB_URI environment variable inside .env.local",
+  );
+}
+```
+
+The default database name is `mcd-xtreme-fitness`. You can override it with the `DB_NAME` environment variable:
+
+```bash .env.local
+MONGODB_URI=mongodb://127.0.0.1:27017/mcd-xtreme-fitness
+DB_NAME=mcd-xtreme-fitness
+```
+
+<Note>
+  `dbConnect()` supports connection caching. It is safe to call it multiple times — it returns the existing connection if one is already established.
+</Note>
+
+## Seeding the database
+
+The seed script lives in `lib/db/mcd/mcd.js` and is run with:
+
+```bash
+npm run "Opret Database"
+```
+
+The script seeds collections in a specific order to satisfy references between documents:
+
+1. `seedSubscriptions()` — must exist before users are created
+2. `seedWorkouts()` — must exist before users are created
+3. `seedUsers()` — references subscriptions and workouts
+4. All remaining collections in parallel: services, reviews, employees, messages, blogs, exercises
+
+<Warning>
+  Running the seed script drops and recreates existing data. Use it to reset the database to its original state.
+</Warning>
+
+## Data models
+
+### User
+
+Stored in the `users` collection. Represents an application user with role-based access.
+
+| Field | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `name` | String | Yes | — | Display name |
+| `email` | String | Yes | — | Unique |
+| `picture` | String | No | `/users/no-user.png` | Profile image path |
+| `hashedPassword` | String | Yes | — | bcrypt hash, never returned in responses |
+| `role` | String | Yes | `guest` | One of `admin`, `member`, `guest` |
+| `enrolledWorkouts` | ObjectId[] | No | — | Refs to `workout`. Blocked for `admin` and `guest` roles |
+| `subscription` | ObjectId | No | — | Ref to `subscription`. Blocked for `admin` and `guest` roles |
+| `createdAt` | Date | — | auto | Mongoose timestamp |
+| `updatedAt` | Date | — | auto | Mongoose timestamp |
+
+<Note>
+  Users with the `admin` or `guest` role cannot have `enrolledWorkouts` or `subscription` set. Mongoose middleware enforces this automatically on save and update operations.
+</Note>
+
+---
+
+### Blog
+
+Stored in the `blogs` collection. Represents a blog post.
+
+| Field | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `image` | String | No | `SERVER_HOST/blogs/no-image.png` | Cover image URL |
+| `title` | String | Yes | — | |
+| `teaser` | String | Yes | — | Short preview text |
+| `content` | String | Yes | — | Full post body |
+| `author` | String | Yes | — | Author name |
+| `createdAt` | Date | — | auto | Mongoose timestamp |
+| `updatedAt` | Date | — | auto | Mongoose timestamp |
+
+---
+
+### Employee (Trainer)
+
+Stored in the `employees` collection. Represents a trainer or staff member.
+
+| Field | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `image` | String | No | `SERVER_HOST/employees/no-image.png` | Profile image URL |
+| `name` | String | Yes | — | |
+| `area` | String | Yes | — | Area of expertise or department |
+| `createdAt` | Date | — | auto | Mongoose timestamp |
+| `updatedAt` | Date | — | auto | Mongoose timestamp |
+
+---
+
+### Exercise
+
+Stored in the `exercises` collection. Describes an individual exercise.
+
+| Field | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `image` | String | No | `SERVER_HOST/exercises/no-image.png` | Exercise image URL |
+| `title` | String | Yes | — | |
+| `teaser` | String | Yes | — | Short description |
+| `content` | String | Yes | — | Full description or instructions |
+| `createdAt` | Date | — | auto | Mongoose timestamp |
+| `updatedAt` | Date | — | auto | Mongoose timestamp |
+
+---
+
+### Message
+
+Stored in the `messages` collection. Represents a contact form submission.
+
+| Field | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `name` | String | Yes | — | Sender name |
+| `email` | String | No | — | Sender email |
+| `phone` | Number | No | — | Sender phone number |
+| `subject` | String | No | — | Message subject |
+| `message` | String | Yes | — | Message body |
+| `status` | Boolean | No | `false` | Read/processed status |
+| `createdAt` | Date | — | auto | Mongoose timestamp |
+| `updatedAt` | Date | — | auto | Mongoose timestamp |
+
+---
+
+### Review
+
+Stored in the `reviews` collection. Represents a customer review or testimonial.
+
+| Field | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `author` | String | Yes | — | Reviewer name |
+| `content` | String | Yes | — | Review text |
+| `position` | String | No | — | Reviewer's job title or role |
+| `createdAt` | Date | — | auto | Mongoose timestamp |
+| `updatedAt` | Date | — | auto | Mongoose timestamp |
+
+---
+
+### Service
+
+Stored in the `services` collection. Represents a gym service or offering.
+
+| Field | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `title` | String | Yes | — | |
+| `teaser` | String | Yes | — | Short description |
+| `content` | String | Yes | — | Full description |
+| `icon` | String | No | — | Icon identifier |
+| `image` | String | No | `SERVER_HOST/services/no-image.png` | Service image URL |
+| `createdAt` | Date | — | auto | Mongoose timestamp |
+| `updatedAt` | Date | — | auto | Mongoose timestamp |
+
+---
+
+### Subscription
+
+Stored in the `subscriptions` collection. Represents a membership plan.
+
+| Field | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `image` | String | No | `SERVER_HOST/subscriptions/no-image.png` | Plan image URL |
+| `title` | String | Yes | — | Plan name |
+| `list` | String[] | No | — | List of included features |
+| `price` | Number | Yes | — | Monthly price |
+| `createdAt` | Date | — | auto | Mongoose timestamp |
+| `updatedAt` | Date | — | auto | Mongoose timestamp |
+
+---
+
+### Workout
+
+Stored in the `workouts` collection. Represents a scheduled workout class.
+
+| Field | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `title` | String | Yes | — | Class name |
+| `description` | String | No | — | Class description |
+| `weekday` | String | No | — | Day of the week |
+| `time` | String | No | — | Start time |
+| `createdAt` | Date | — | auto | Mongoose timestamp |
+| `updatedAt` | Date | — | auto | Mongoose timestamp |

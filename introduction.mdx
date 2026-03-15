@@ -1,0 +1,73 @@
+---
+title: Introduction
+description: Xtreme Fitness — a full-stack fitness web application with role-based access, workout management, and an admin dashboard.
+---
+
+# Xtreme Fitness
+
+Xtreme Fitness is a modern fitness web application built with React and Express/MongoDB. It serves three distinct user roles — guests, members, and admins — each with a tailored experience.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get the app running locally in minutes
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/architecture/overview">
+    Understand the system design and tech stack
+  </Card>
+  <Card title="Features" icon="star" href="/features/public-pages">
+    Explore all user-facing features
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Browse the full REST API documentation
+  </Card>
+</CardGroup>
+
+## What is Xtreme Fitness?
+
+Xtreme Fitness is a full-stack fitness platform that combines:
+
+- **Public marketing site** — Home, About, Services, Trainers, Pricing, Blog, and Contact pages
+- **Member portal** — Authenticated members can browse and enroll in workouts
+- **Admin dashboard** — Admins manage blog posts, review customer messages, and moderate reviews
+- **REST API** — Express backend with MongoDB for data persistence and JWT for authentication
+
+## User roles
+
+The application supports three roles with distinct permissions:
+
+| Role | Access |
+|------|--------|
+| **Guest** | Public marketing pages, blog, contact form |
+| **Member** | All public pages + personal workout portal (`/min-side`) |
+| **Admin** | All pages + full admin dashboard (`/admin`) |
+
+## Tech stack at a glance
+
+<CardGroup cols={2}>
+  <Card title="Frontend" icon="browser">
+    React 19, Vite, React Router v7, TanStack Query, Tailwind CSS
+  </Card>
+  <Card title="Backend" icon="server">
+    Express 5, MongoDB, Mongoose, JWT authentication
+  </Card>
+  <Card title="Forms" icon="input-text">
+    React Hook Form with Zod validation
+  </Card>
+  <Card title="Rich Text" icon="pen-to-square">
+    Plate editor for blog content management
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<Steps>
+  <Step title="Set up your environment">
+    Follow the [quickstart guide](/quickstart) to install dependencies and run the app locally.
+  </Step>
+  <Step title="Explore the features">
+    Read about [public pages](/features/public-pages), [authentication](/features/authentication), [member portal](/features/member-portal), and the [admin dashboard](/features/admin-dashboard).
+  </Step>
+  <Step title="Integrate with the API">
+    Browse the [API reference](/api/overview) to understand all available endpoints.
+  </Step>
+</Steps>

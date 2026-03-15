@@ -1,0 +1,206 @@
+---
+title: 'Project structure'
+description: 'Annotated directory layout for the Xtreme Fitness repository, covering both the React frontend and the Express backend.'
+keywords: ['project structure', 'directory layout', 'frontend', 'backend', 'src', 'screens', 'features']
+---
+
+## Repository root
+
+```text
+xtreme-fitness/
+├── index.html              # SPA entry point — Vite injects the JS bundle here
+├── package.json            # Frontend dependencies and Vite scripts
+├── vite.config.js          # Vite configuration (React plugin, Tailwind plugin)
+├── src/                    # All frontend source code
+└── backend/                # Standalone Express server
+```
+
+<Note>
+The frontend (`src/`) and backend (`backend/`) are independent Node packages with their own `package.json` files. They are not in a monorepo workspace — each must be installed and started separately.
+</Note>
+
+---
+
+## Frontend — `src/`
+
+```text
+src/
+├── index.jsx               # App entry point: QueryClient, AuthProvider, BrowserRouter, all Routes
+├── components/             # Shared UI primitives used across the whole app
+├── features/               # Self-contained feature slices (admin, marketing)
+├── lib/                    # Cross-cutting utilities: API client, auth context, rich-text helpers
+└── screens/                # Top-level page components, one folder per route
+```
+
+### `src/components/`
+
+```text
+components/
+├── Layout.jsx              # Shared page shell: renders Navbar and <Outlet> for public routes
+├── Navbar.jsx              # Site-wide navigation bar
+└── ui/                     # Low-level Radix + Tailwind component primitives (buttons, inputs, etc.)
+```
+
+`Layout.jsx` is the route element that wraps all public marketing pages. It renders the `Navbar` at the top and an `<Outlet>` for the matched child route below it.
+
+### `src/lib/`
+
+```text
+lib/
+├── api/
+│   ├── client.js           # Fetch wrapper, token storage helpers, Authorization header injection
+│   ├── hooks.js            # TanStack Query hooks for all resources
+│   ├── query-keys.js       # Centralised query key factory
+│   └── services/           # Per-resource service functions that call the REST API
+├── auth/
+│   └── auth-context.jsx    # AuthProvider, useAuth hook, JWT decode/validate, session restore
+├── content/                # Static or CMS-sourced content helpers
+├── rich-text/              # Plate editor configuration and serialiser utilities
+└── utils.js                # General-purpose utility functions (e.g. cn() for class merging)
+```
+
+`auth-context.jsx` is the single source of truth for authentication state. It exposes `signIn`, `signOut`, `refreshSession`, `isAuthenticated`, `isAdmin`, and `isMember` to the rest of the app.
+
+### `src/screens/`
+
+Each screen folder contains the React component(s) for one top-level route. All screens are lazy-loaded.
+
+```text
+screens/
+├── About/                  # /om-os — Company overview page
+├── Blog/
+│   ├── BlogList            # /blog — List of published blog posts
+│   └── BlogDetail          # /blog/:blogId — Single post view with rich-text rendering
+├── Contact/                # /kontakt — Contact form (submits to the messages API)
+├── Home/                   # / — Landing page
+├── Login/                  # /login — Credential form, calls AuthProvider.signIn()
+├── Member/                 # /min-side — Member dashboard (requires role: member)
+├── NotFound/               # * — 404 fallback
+├── Pricing/                # /priser — Membership pricing tiers
+├── Services/               # /tjenester — Fitness services offered
+└── Trainers/               # /traenere — Trainer profiles
+```
+
+### `src/features/`
+
+Features are self-contained slices of functionality that are too complex to live in `screens/` or `components/` alone.
+
+```text
+features/
+├── admin/
+│   ├── components/
+│   │   ├── AdminLayout.jsx     # Admin shell: sidebar navigation + <Outlet>
+│   │   └── RequireAuth.jsx     # Route guard — checks authentication and role before rendering
+│   ├── forms/                  # Admin-specific form components (blog editor, etc.)
+│   ├── screens/
+│   │   ├── AdminDashboard      # /admin — Overview and quick stats
+│   │   ├── AdminBlogs          # /admin/blogs — Create, edit, and delete blog posts
+│   │   ├── AdminMessages       # /admin/messages — View contact form submissions
+│   │   └── AdminReviews        # /admin/reviews — Moderate member reviews
+│   └── ui.jsx                  # Admin-scoped UI component re-exports
+└── marketing/
+    ├── content/                # Static content definitions for marketing sections
+    ├── sections/               # Reusable marketing section components (hero, CTA, etc.)
+    └── ui.jsx                  # Marketing-scoped UI component re-exports
+```
+
+`RequireAuth` reads `isAuthenticated` and `user.role` from `useAuth()`. Unauthenticated visitors are redirected to `/login`. Authenticated users whose role does not match `allowRoles` are redirected to the area appropriate for their role.
+
+---
+
+## Backend — `backend/`
+
+```text
+backend/
+├── index.js                # Entry point — imports server.js and starts listening
+├── package.json            # Backend dependencies (Express, Mongoose, JWT, etc.)
+├── lib/
+│   ├── server.js           # Express app setup: middleware, all route registrations
+│   ├── routes/             # Route definitions — map HTTP methods/paths to handlers
+│   ├── handlers/           # Business logic — query DB, apply rules, build response
+│   ├── db/
+│   │   ├── dbConnect.js    # Mongoose connection helper (called once, then reused)
+│   │   └── models/         # Mongoose schema and model definitions
+│   └── middleware/
+│       └── auth.middleware.js  # JWT verification — attaches decoded user to req.user
+├── public/                 # Publicly served static files (uploaded images, etc.)
+└── sites/                  # Built frontend sites served by Express static middleware
+```
+
+### `backend/lib/routes/`
+
+Each resource has its own subdirectory containing one or two route files: a singular route (for operations on a single document by ID) and a plural route (for collection-level operations).
+
+```text
+routes/
+├── auth/
+│   ├── auth.js             # POST /auth/signin
+│   └── token.js            # POST /auth/token (session restore via stored JWT)
+├── blogs/
+│   ├── blog.route.js       # GET/PUT/DELETE /blogs/:id
+│   └── blogs.route.js      # GET/POST /blogs
+├── employees/
+│   ├── employee.route.js
+│   └── employees.route.js
+├── exercises/
+│   ├── exercise.route.js
+│   └── exercises.route.js
+├── messages/
+│   ├── message.route.js
+│   └── messages.route.js
+├── reviews/
+│   ├── review.route.js
+│   └── reviews.route.js
+├── services/
+│   ├── service.route.js
+│   └── services.route.js
+├── subscriptions/
+│   ├── subscription.route.js
+│   └── subscriptions.route.js
+├── users/
+│   ├── user.route.js
+│   └── users.route.js
+└── workouts/
+    ├── workout.route.js
+    └── workouts.route.js
+```
+
+### `backend/lib/handlers/`
+
+Handlers contain the actual business logic for each resource. Routes import handlers and pass them as Express route callbacks. This separation keeps route files thin and makes the logic easier to test in isolation.
+
+```text
+handlers/
+├── auth.handler.js         # signInUser, signInWithToken — bcrypt compare + jwt.sign
+├── file.handler.js         # multer configuration for file uploads
+├── blogs/
+├── employees/
+├── exercises/
+├── messages/
+├── reviews/
+├── services/
+├── subscriptions/
+├── users/
+└── workouts/
+```
+
+### `backend/lib/db/models/`
+
+One Mongoose model file per MongoDB collection.
+
+```text
+models/
+├── blog.model.mjs
+├── employee.model.mjs
+├── exercise.model.mjs
+├── message.model.mjs
+├── review.model.mjs
+├── service.model.mjs
+├── subscription.model.mjs
+├── user.model.mjs          # Includes role-based field guards for admin/guest accounts
+└── workout.model.mjs
+```
+
+<Tip>
+The `user` model enforces that `admin` and `guest` accounts cannot hold `subscription` or `enrolledWorkouts` values. This is enforced at the Mongoose level via `pre('save')`, `pre('findOneAndUpdate')`, and schema-level validators — not just in application code.
+</Tip>

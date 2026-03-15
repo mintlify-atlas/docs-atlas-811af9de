@@ -1,0 +1,224 @@
+---
+title: "Blogs"
+description: "Create and manage blog posts"
+---
+
+Blog endpoints provide full CRUD access to blog posts. Read operations are public; write operations require authentication.
+
+<Note>
+  `POST`, `PUT`, and `DELETE` require a valid `Authorization: Bearer <token>` header.
+</Note>
+
+---
+
+## GET /blogs
+
+Returns a list of all blog posts.
+
+**Response**
+
+<ResponseField name="message" type="string">
+  `Blogs fetched successfully`
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of blog objects. See [blog object fields](#blog-object) below.
+</ResponseField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/blogs
+```
+
+**Success response**
+
+```json
+{
+  "message": "Blogs fetched successfully",
+  "data": [
+    {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "title": "5 Tips for Better Workouts",
+      "teaser": "Maximize your gains with these simple tips.",
+      "content": "<p>Full article content here...</p>",
+      "author": "Coach Anders",
+      "image": "http://localhost:3042/blogs/workout-tips.jpg",
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+## GET /blog/:id
+
+Fetch a single blog post by its MongoDB ObjectId.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the blog post.
+</ParamField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/blog/64f1a2b3c4d5e6f7a8b9c0d1
+```
+
+---
+
+## POST /blog
+
+Create a new blog post. Accepts `multipart/form-data` to optionally upload a cover image.
+
+<ParamField body="title" type="string" required>
+  Title of the blog post.
+</ParamField>
+
+<ParamField body="content" type="string" required>
+  Full body content of the post (HTML or plain text).
+</ParamField>
+
+<ParamField body="teaser" type="string" required>
+  Short summary shown in listing views.
+</ParamField>
+
+<ParamField body="author" type="string" required>
+  Name of the author.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Optional cover image (multipart upload). Defaults to `no-image.png` if omitted.
+</ParamField>
+
+**Response** — `201 Created`
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Blog created successfully`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The newly created blog object.
+</ResponseField>
+
+**Example**
+
+```bash
+curl -X POST http://localhost:3042/blog \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Getting Started with HIIT",
+    "teaser": "A beginner guide to high-intensity interval training.",
+    "content": "HIIT workouts are one of the most efficient ways to burn fat...",
+    "author": "Coach Maria"
+  }'
+```
+
+---
+
+## PUT /blog
+
+Update an existing blog post. The blog `id` must be provided; all other fields are optional.
+
+<ParamField body="id" type="string" required>
+  MongoDB ObjectId of the blog post to update.
+</ParamField>
+
+<ParamField body="title" type="string">
+  Updated title.
+</ParamField>
+
+<ParamField body="teaser" type="string">
+  Updated teaser text.
+</ParamField>
+
+<ParamField body="content" type="string">
+  Updated body content.
+</ParamField>
+
+<ParamField body="author" type="string">
+  Updated author name.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Replacement cover image (multipart upload). The previous image file is deleted from the server.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X PUT http://localhost:3042/blog \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "64f1a2b3c4d5e6f7a8b9c0d1", "title": "Getting Started with HIIT (Updated)"}'
+```
+
+---
+
+## DELETE /blog/:id
+
+Permanently delete a blog post. The associated image file is also removed from the server.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the blog post to delete.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X DELETE http://localhost:3042/blog/64f1a2b3c4d5e6f7a8b9c0d1 \
+  -H "Authorization: Bearer <token>"
+```
+
+**Success response**
+
+```json
+{
+  "status": "ok",
+  "message": "Blog deleted successfully",
+  "data": { "_id": "64f1a2b3c4d5e6f7a8b9c0d1", "title": "..." }
+}
+```
+
+---
+
+## Blog object
+
+<ResponseField name="_id" type="string">
+  MongoDB ObjectId.
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Title of the post.
+</ResponseField>
+
+<ResponseField name="teaser" type="string">
+  Short summary.
+</ResponseField>
+
+<ResponseField name="content" type="string">
+  Full body content.
+</ResponseField>
+
+<ResponseField name="author" type="string">
+  Author name.
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  URL of the cover image.
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 last-updated timestamp.
+</ResponseField>

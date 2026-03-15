@@ -1,0 +1,144 @@
+---
+title: "API Overview"
+description: "Complete reference for the Xtreme Fitness REST API"
+---
+
+The Xtreme Fitness API is a RESTful JSON API that powers the backend of the platform. All requests and responses use `application/json`.
+
+## Base URL
+
+```
+http://localhost:3042
+```
+
+## Authentication
+
+Most write operations require a valid JWT. The token can be supplied in one of two ways:
+
+**Authorization header (preferred)**
+
+```
+Authorization: Bearer <token>
+```
+
+**Request body**
+
+Some endpoints (e.g. `POST /auth/token`) also accept `{ "token": "<jwt>" }` in the JSON body.
+
+Obtain a token by calling [`POST /auth/signin`](/api/auth#post-authsignin).
+
+<Info>
+  The `USE_JWT` environment variable controls whether the auth middleware is enforced. When set to `false`, protected routes are accessible without a token. This should never be disabled in production.
+</Info>
+
+## Content-Type
+
+All request bodies must use `Content-Type: application/json` unless the endpoint accepts file uploads, in which case use `multipart/form-data`.
+
+## Standard response envelope
+
+Every response is wrapped in a consistent envelope:
+
+```json
+{
+  "status": "ok" | "error" | "not_found",
+  "message": "Human-readable description",
+  "data": {} | []
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `status` | `string` | `ok` on success, `error` on failure, `not_found` when the resource does not exist |
+| `message` | `string` | Human-readable description of the result |
+| `data` | `object` or `array` | The returned resource(s), or an empty array on error |
+
+## Error responses
+
+```json
+{
+  "status": "error",
+  "message": "No access without token."
+}
+```
+
+Common HTTP status codes:
+
+| Status | Meaning |
+|---|---|
+| `200` | Success |
+| `201` | Resource created |
+| `400` | Validation error — missing or invalid fields |
+| `401` | Token invalid or expired |
+| `404` | Resource not found |
+| `500` | Internal server error |
+
+## Resource groups
+
+| Group | Description | Page |
+|---|---|---|
+| Auth | Sign in, validate token | [Authentication](/api/auth) |
+| Users | User accounts and workout enrollment | [Users](/api/users) |
+| Blogs | Blog posts | [Blogs](/api/blogs) |
+| Services | Gym services | [Services](/api/services) |
+| Trainers | Employee / trainer profiles | [Trainers](/api/trainers) |
+| Workouts | Workout classes | [Workouts](/api/workouts) |
+| Exercises | Individual exercises | [Workouts](/api/workouts) |
+| Reviews | Customer reviews | [Reviews](/api/reviews) |
+| Messages | Contact form messages | [Messages](/api/messages) |
+| Subscriptions | Membership plans | [Subscriptions](/api/subscriptions) |
+
+## All endpoints
+
+| Method | Path | Auth required | Description |
+|---|---|---|---|
+| `POST` | `/auth/signin` | No | Sign in with email and password |
+| `POST` | `/auth/token` | No | Validate or refresh a JWT |
+| `GET` | `/users` | No | List all users |
+| `GET` | `/user/:id` | No | Get a user by ID |
+| `POST` | `/user` | Yes | Create a user |
+| `PUT` | `/user` | Yes | Update a user |
+| `DELETE` | `/user/:id` | Yes | Delete a user |
+| `POST` | `/user/:id/enroll` | Yes | Enroll user in workout(s) |
+| `DELETE` | `/user/:id/enroll/:workoutId` | Yes | Remove a workout from user |
+| `GET` | `/user/:id/workouts` | Yes | Get user's enrolled workouts |
+| `GET` | `/blogs` | No | List all blogs |
+| `GET` | `/blog/:id` | No | Get a blog by ID |
+| `POST` | `/blog` | Yes | Create a blog |
+| `PUT` | `/blog` | Yes | Update a blog |
+| `DELETE` | `/blog/:id` | Yes | Delete a blog |
+| `GET` | `/services` | No | List all services |
+| `GET` | `/service/:id` | No | Get a service by ID |
+| `POST` | `/service` | Yes | Create a service |
+| `PUT` | `/service` | Yes | Update a service |
+| `DELETE` | `/service/:id` | Yes | Delete a service |
+| `GET` | `/employees` | No | List all employees |
+| `GET` | `/employee/:id` | No | Get an employee by ID |
+| `POST` | `/employee` | Yes | Create an employee |
+| `PUT` | `/employee` | Yes | Update an employee |
+| `DELETE` | `/employee/:id` | Yes | Delete an employee |
+| `GET` | `/workouts` | No | List all workouts |
+| `GET` | `/workout/:id` | No | Get a workout by ID |
+| `POST` | `/workout` | Yes | Create a workout |
+| `PUT` | `/workout` | Yes | Update a workout |
+| `DELETE` | `/workout/:id` | Yes | Delete a workout |
+| `GET` | `/exercises` | No | List all exercises |
+| `GET` | `/exercise/:id` | No | Get an exercise by ID |
+| `POST` | `/exercise` | Yes | Create an exercise |
+| `PUT` | `/exercise` | Yes | Update an exercise |
+| `DELETE` | `/exercise/:id` | Yes | Delete an exercise |
+| `GET` | `/reviews` | No | List all reviews |
+| `GET` | `/review/:id` | No | Get a review by ID |
+| `POST` | `/review` | Yes | Create a review |
+| `PUT` | `/review` | Yes | Update a review |
+| `DELETE` | `/review/:id` | Yes | Delete a review |
+| `GET` | `/messages` | No | List all messages |
+| `GET` | `/message/:id` | No | Get a message by ID |
+| `POST` | `/message` | No | Submit a contact message |
+| `PUT` | `/message` | Yes | Update a message |
+| `DELETE` | `/message/:id` | Yes | Delete a message |
+| `GET` | `/subscriptions` | No | List all subscription plans |
+| `GET` | `/subscription/:id` | No | Get a subscription by ID |
+| `POST` | `/subscription` | Yes | Create a subscription plan |
+| `PUT` | `/subscription` | Yes | Update a subscription plan |
+| `DELETE` | `/subscription/:id` | Yes | Delete a subscription plan |

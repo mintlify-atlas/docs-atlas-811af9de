@@ -1,0 +1,135 @@
+---
+title: 'Tech stack'
+description: 'Detailed breakdown of every major technology used in the Xtreme Fitness frontend and backend, including version numbers and rationale.'
+keywords: ['react', 'vite', 'express', 'mongodb', 'mongoose', 'tailwind', 'jwt', 'tanstack query']
+---
+
+## Frontend
+
+<CardGroup cols={2}>
+  <Card title="React 19" icon="react">
+    The UI layer. React 19 is used for its concurrent rendering model and the `use` API. All screens are lazy-loaded via `React.lazy()` to keep the initial bundle small.
+  </Card>
+  <Card title="Vite 7" icon="bolt">
+    The build tool and dev server. Vite's native ES module approach means near-instant hot-module replacement during development and fast production builds via Rollup. The React plugin (`@vitejs/plugin-react`) handles JSX and Fast Refresh.
+  </Card>
+  <Card title="React Router v7" icon="route">
+    Client-side routing. React Router v7 provides the `BrowserRouter`, `Routes`, `Route`, `Navigate`, and `Outlet` primitives used throughout the app. The single route declaration in `src/index.jsx` defines all public, admin, and member routes.
+  </Card>
+  <Card title="TanStack Query v5" icon="database">
+    Server-state management. TanStack Query handles fetching, caching, background refetching, and error states for all API calls. A single `QueryClient` instance is created at the root and shared across public and admin routes.
+  </Card>
+  <Card title="Tailwind CSS v4" icon="palette">
+    Utility-first styling. Tailwind v4 is integrated through its Vite plugin (`@tailwindcss/vite`), which processes CSS at build time. The `tw-animate-css` package adds animation utilities and `tailwind-merge` resolves conflicting class names at runtime.
+  </Card>
+  <Card title="React Hook Form v7 + Zod v4" icon="clipboard-check">
+    Form management and validation. React Hook Form minimises re-renders by keeping form state uncontrolled. Zod schemas describe the expected shape and constraints of form data; `@hookform/resolvers` connects the two libraries so validation runs on submit.
+  </Card>
+  <Card title="Plate v52" icon="file-text">
+    Rich-text editing. The Plate editor framework (`platejs`, `@platejs/basic-nodes`, `@platejs/link`, `@platejs/list`) powers the blog post editor in the admin section. `dompurify` sanitises HTML before it is rendered from stored rich-text content.
+  </Card>
+  <Card title="Radix UI" icon="layout">
+    Headless, accessible component primitives. `@radix-ui/react-navigation-menu`, `@radix-ui/react-separator`, and `@radix-ui/react-slot` provide unstyled interactive components that are then styled with Tailwind. `class-variance-authority` and `clsx` manage conditional class composition on top of these primitives.
+  </Card>
+</CardGroup>
+
+### Frontend dependency versions
+
+| Package | Version |
+|---|---|
+| `react` | ^19.2.4 |
+| `react-dom` | ^19.2.4 |
+| `react-router-dom` | ^7.13.1 |
+| `@tanstack/react-query` | ^5.90.21 |
+| `tailwindcss` | ^4.2.1 |
+| `@tailwindcss/vite` | ^4.2.1 |
+| `react-hook-form` | ^7.71.2 |
+| `zod` | ^4.3.6 |
+| `@hookform/resolvers` | ^5.2.2 |
+| `platejs` | ^52.3.4 |
+| `@platejs/basic-nodes` | ^52.0.11 |
+| `@platejs/link` | ^52.0.11 |
+| `@platejs/list` | ^52.0.11 |
+| `@radix-ui/react-navigation-menu` | ^1.2.14 |
+| `@radix-ui/react-separator` | ^1.1.8 |
+| `@radix-ui/react-slot` | ^1.2.4 |
+| `dompurify` | ^3.3.3 |
+| `lucide-react` | ^0.577.0 |
+| `class-variance-authority` | ^0.7.1 |
+| `clsx` | ^2.1.1 |
+| `tailwind-merge` | ^3.5.0 |
+| `tw-animate-css` | ^1.4.0 |
+
+### Frontend dev dependencies
+
+| Package | Version |
+|---|---|
+| `vite` | ^7.3.1 |
+| `@vitejs/plugin-react` | ^5.1.4 |
+| `esbuild` | ^0.27.3 |
+| `globals` | ^17.4.0 |
+
+---
+
+## Backend
+
+<CardGroup cols={2}>
+  <Card title="Express 5" icon="server">
+    The HTTP framework. Express 5 handles routing, middleware composition, and static file serving. The server is configured in `backend/lib/server.js` and exported as a module so it can be imported by the entry point `backend/index.js`.
+  </Card>
+  <Card title="MongoDB + Mongoose 8" icon="database">
+    The database and ODM. MongoDB stores all application data. Mongoose provides schema definitions, validation hooks, and a consistent query interface. Models live in `backend/lib/db/models/`.
+  </Card>
+  <Card title="jsonwebtoken 9" icon="key">
+    JWT creation and verification. `jwt.sign()` issues tokens on successful login; `jwt.verify()` validates them inside the auth middleware (`backend/lib/middleware/auth.middleware.js`) before protected routes are reached.
+  </Card>
+  <Card title="bcrypt / bcryptjs" icon="lock">
+    Password hashing. Passwords are never stored in plain text. `bcryptjs` is used to compare a submitted password against the stored hash during sign-in.
+  </Card>
+  <Card title="multer 2" icon="upload">
+    File upload handling. `multer` processes `multipart/form-data` requests, making uploaded files available to route handlers. Used for profile pictures and any other binary assets.
+  </Card>
+  <Card title="cors, cookie-parser, body-parser" icon="shield">
+    Request processing middleware. `cors` allows the frontend dev server (a different origin) to call the API during development. `cookie-parser` makes cookies available on `req.cookies`. `body-parser` parses JSON and URL-encoded request bodies.
+  </Card>
+</CardGroup>
+
+### Backend dependency versions
+
+| Package | Version |
+|---|---|
+| `express` | ^5.1.0 |
+| `mongoose` | ^8.19.1 |
+| `jsonwebtoken` | ^9.0.2 |
+| `bcrypt` | ^6.0.0 |
+| `bcryptjs` | ^3.0.2 |
+| `multer` | ^2.0.2 |
+| `cors` | ^2.8.5 |
+| `cookie-parser` | ^1.4.7 |
+| `body-parser` | ^2.2.0 |
+| `dotenv` | ^17.2.3 |
+| `uuid` | ^13.0.0 |
+| `mime-types` | ^3.0.1 |
+| `nodemon` | ^3.1.10 |
+
+### Backend dev dependencies
+
+| Package | Version |
+|---|---|
+| `eslint` | ^9.38.0 |
+| `@eslint/js` | ^9.38.0 |
+| `eslint-plugin-react` | ^7.37.5 |
+| `globals` | ^16.4.0 |
+| `@types/express` | ^5.0.3 |
+| `@types/jsonwebtoken` | ^9.0.10 |
+| `@types/multer` | ^2.0.0 |
+
+---
+
+## Dev tooling
+
+**Vite** serves as both the development server and production bundler for the frontend. It provides fast cold starts, instant HMR, and optimised output with code-splitting by route.
+
+**nodemon** watches the backend source for changes and automatically restarts the Node process during development, eliminating the need to manually restart the server after every edit.
+
+**ESLint** is configured in both the frontend and backend workspaces. The backend uses `@eslint/js` with flat config (`backend/.eslintrc.json`). ESLint keeps code consistent and catches common mistakes before they reach the repository.

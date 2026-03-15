@@ -1,0 +1,194 @@
+---
+title: "Authentication"
+description: "Sign in with email and password or validate an existing JWT"
+---
+
+The API uses JWT (JSON Web Tokens) for authentication. Obtain a token by signing in, then pass it as a `Bearer` token in the `Authorization` header for protected endpoints.
+
+---
+
+## POST /auth/signin
+
+Authenticate a user with their email and password. Returns a JWT and the user object.
+
+<ParamField body="email" type="string" required>
+  The user's email address.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  The user's plaintext password.
+</ParamField>
+
+**Response**
+
+<ResponseField name="status" type="string">
+  `ok` on success, `error` on failure.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable description, e.g. `admin user signed in successfully`.
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  <Expandable title="data fields">
+    <ResponseField name="token" type="string">
+      JWT access token. Include this as `Authorization: Bearer <token>` on subsequent requests.
+    </ResponseField>
+    <ResponseField name="user" type="object">
+      <Expandable title="user fields">
+        <ResponseField name="_id" type="string">
+          MongoDB ObjectId of the user.
+        </ResponseField>
+        <ResponseField name="name" type="string">
+          Display name.
+        </ResponseField>
+        <ResponseField name="email" type="string">
+          Email address.
+        </ResponseField>
+        <ResponseField name="picture" type="string">
+          URL of the user's profile picture.
+        </ResponseField>
+        <ResponseField name="role" type="string">
+          User role, e.g. `admin`, `member`, or `guest`.
+        </ResponseField>
+        <ResponseField name="enrolledWorkouts" type="array">
+          Array of workout ObjectIds the user is enrolled in. Only populated for non-admin, non-guest roles.
+        </ResponseField>
+        <ResponseField name="subscription" type="string">
+          ObjectId of the user's active subscription plan. Only populated for non-admin, non-guest roles.
+        </ResponseField>
+        <ResponseField name="createdAt" type="string">
+          ISO 8601 timestamp.
+        </ResponseField>
+        <ResponseField name="updatedAt" type="string">
+          ISO 8601 timestamp.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+**Example**
+
+```bash
+curl -X POST http://localhost:3042/auth/signin \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@xtremefit.dk", "password": "admin"}'
+```
+
+**Success response**
+
+```json
+{
+  "status": "ok",
+  "message": "admin user signed in successfully",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "name": "Admin User",
+      "email": "admin@xtremefit.dk",
+      "picture": "http://localhost:3042/users/no-user.jpg",
+      "role": "admin",
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  }
+}
+```
+
+**Error response**
+
+```json
+{
+  "status": "error",
+  "message": "An Error Occurred",
+  "data": []
+}
+```
+
+<Warning>
+  The API returns a generic `An Error Occurred` message for both wrong email and wrong password to avoid leaking account existence information.
+</Warning>
+
+---
+
+## POST /auth/token
+
+Validate an existing JWT and retrieve the current user object. Use this to restore a session after a page reload.
+
+The token can be provided either in the request body or in the `Authorization` header.
+
+<ParamField body="token" type="string">
+  JWT to validate. Required if not providing the `Authorization` header.
+</ParamField>
+
+**Headers (alternative)**
+
+```
+Authorization: Bearer <token>
+```
+
+**Response**
+
+<ResponseField name="status" type="string">
+  `ok` if the token is valid, `error` if invalid or expired.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Token Auth Success` on success.
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The full user object (same shape as the `user` field in `/auth/signin`), with `enrolledWorkouts` and `subscription` populated.
+</ResponseField>
+
+**Example — token in body**
+
+```bash
+curl -X POST http://localhost:3042/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}'
+```
+
+**Example — token in header**
+
+```bash
+curl -X POST http://localhost:3042/auth/token \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+**Success response**
+
+```json
+{
+  "status": "ok",
+  "message": "Token Auth Success",
+  "data": {
+    "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+    "name": "Admin User",
+    "email": "admin@xtremefit.dk",
+    "picture": "http://localhost:3042/users/no-user.jpg",
+    "role": "admin",
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T10:00:00.000Z"
+  }
+}
+```
+
+**Error responses**
+
+```json
+{
+  "status": "error",
+  "message": "Token is required"
+}
+```
+
+```json
+{
+  "status": "error",
+  "message": "Something happend, maybe the token expired",
+  "data": {}
+}
+```

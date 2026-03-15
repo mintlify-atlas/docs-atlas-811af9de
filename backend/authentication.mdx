@@ -1,0 +1,211 @@
+---
+title: "Authentication"
+description: "JWT-based authentication, middleware, login flow, and role-based access in the Xtreme Fitness backend."
+---
+
+The Xtreme Fitness backend uses **JSON Web Tokens (JWT)** for authentication. Authentication is optional and toggled by the `USE_JWT` environment variable, making it easy to develop without authentication enabled and switch it on when needed.
+
+## Enabling authentication
+
+Authentication is controlled by the `USE_JWT` flag in `.env.local`:
+
+```bash .env.local
+# Disable JWT (default — open access to all routes)
+USE_JWT=false
+
+# Enable JWT (all protected routes require a valid token)
+USE_JWT=true
+```
+
+<Note>
+  When `USE_JWT` is `false`, the auth middleware calls `next()` immediately without checking any token. This is useful during development.
+</Note>
+
+## Password hashing
+
+Passwords are never stored in plain text. The `signInUser` handler uses `bcryptjs` to compare the submitted password against the stored bcrypt hash:
+
+```javascript lib/handlers/auth.handler.js
+import bcryptjs from "bcryptjs";
+
+let validPass = await bcryptjs.compare(
+  credentials.password,
+  user.hashedPassword
+);
+```
+
+The `hashedPassword` field is always removed from user objects before they are returned in API responses via the `sanitizeUser` helper:
+
+```javascript lib/handlers/auth.handler.js
+const sanitizeUser = (user) => {
+  if (!user) return null;
+
+  const safeUser = user.toObject ? user.toObject() : { ...user };
+  delete safeUser.hashedPassword;
+  delete safeUser.__v;
+  return safeUser;
+};
+```
+
+## Login flow
+
+Send a `POST` request to `/auth/login` with the user's credentials:
+
+```bash
+curl -X POST http://localhost:3042/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "member@mediacollege.dk", "password": "yourpassword"}'
+```
+
+On success, the server returns a JWT and the sanitized user object:
+
+```javascript
+{
+  "status": "ok",
+  "message": "member user signed in successfully",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "_id": "...",
+      "name": "member",
+      "email": "member@mediacollege.dk",
+      "picture": "http://localhost:3042/users/no-user.png",
+      "role": "member",
+      "enrolledWorkouts": [...],
+      "subscription": "..."
+    }
+  }
+}
+```
+
+The token payload contains the following claims, signed with `JWT_SECRET`:
+
+```javascript lib/handlers/auth.handler.js
+const token = jwt.sign(
+  {
+    _id: user._id,
+    email: user.email,
+    name: user.name,
+    picture: user.picture,
+    role: user.role,
+    enrolledWorkouts: user.enrolledWorkouts,
+    subscription: user.subscription,
+  },
+  process.env.JWT_SECRET,
+  {
+    expiresIn: process.env.JWT_EXPIRES_IN,
+  }
+);
+```
+
+## Token refresh
+
+Send a `POST` request to `/auth/token` with a valid existing token to receive a fresh user object. This is used to re-authenticate on page load using a token stored client-side.
+
+The `signInWithToken` handler verifies the token, looks up the current user from the database, and returns the updated user data:
+
+```javascript lib/handlers/auth.handler.js
+export const signInWithToken = async (token) => {
+  await dbConnect();
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+  if (decoded) {
+    const user = await userModel
+      .findOne({ email: decoded.email })
+      .select("-hashedPassword -__v")
+      .populate("enrolledWorkouts subscription");
+
+    result = {
+      status: "ok",
+      message: "Token Auth Success",
+      data: sanitizeUser(user),
+    };
+  }
+};
+```
+
+## Auth middleware
+
+The middleware in `lib/middleware/auth.middleware.js` protects routes when `USE_JWT` is enabled. It reads the token from the `Authorization` header using the **Bearer** scheme:
+
+```javascript lib/middleware/auth.middleware.js
+import jwt from "jsonwebtoken";
+
+const auth = (req, res, next) => {
+  const tokenHeader = req.headers["authorization"];
+  const useAuthHeader = process.env.USE_JWT !== "false";
+
+  if (useAuthHeader) {
+    if (!tokenHeader) {
+      return res.json({ status: "error", message: "No access without token." });
+    }
+    try {
+      const token = tokenHeader.split(" ")[1];
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded;
+    } catch (err) {
+      return res.json({
+        status: "error",
+        message: "Not a valid Token - are you signed in?",
+      });
+    }
+  }
+
+  return next();
+};
+```
+
+When a token is valid, the decoded payload is attached to `req.user` and is available in subsequent route handlers.
+
+### Sending the token
+
+Include the token in the `Authorization` header of every request to a protected route:
+
+```bash
+curl http://localhost:3042/users \
+  -H "Authorization: Bearer <your-token>"
+```
+
+<Tip>
+  If you use Postman, set the `token` environment variable to your JWT and use `{{token}}` in the Authorization header.
+</Tip>
+
+## Role-based access
+
+The User model defines three roles. Role is embedded in the JWT payload so route handlers can check it without an additional database lookup.
+
+| Role | Description | Can have subscription | Can enroll in workouts |
+|---|---|---|---|
+| `admin` | Administrator with full access | No | No |
+| `member` | Paying gym member | Yes | Yes |
+| `guest` | Unauthenticated or limited user | No | No |
+
+The `admin` and `guest` roles are considered "blocked" roles in the User model. Mongoose middleware automatically strips `subscription` and `enrolledWorkouts` from these users on save and update:
+
+```javascript lib/db/models/user.model.mjs
+const ROLES_BLOCKED = ["admin", "guest"];
+
+userScheme.pre("save", function (next) {
+  if (ROLES_BLOCKED.includes(this.role)) {
+    this.set("subscription", undefined);
+    this.set("enrolledWorkouts", undefined);
+  }
+  next();
+});
+```
+
+## Seeded test credentials
+
+After running the seed script, the following accounts are available for development:
+
+| Role | Email | Notes |
+|---|---|---|
+| `admin` | `admin@mediacollege.dk` | No subscription or workouts |
+| `member` | `member@mediacollege.dk` | Has subscription and enrolled workouts |
+| `guest` | `guest@mediacollege.dk` | No subscription or workouts |
+
+<Warning>
+  These are development credentials only. Do not use them in a production environment.
+</Warning>

@@ -1,0 +1,198 @@
+---
+title: "Trainers"
+description: "Manage employee and trainer profiles"
+---
+
+Trainer (employee) endpoints provide full CRUD access to the gym's staff profiles. Read operations are public; write operations require authentication.
+
+<Note>
+  `POST`, `PUT`, and `DELETE` require a valid `Authorization: Bearer <token>` header.
+</Note>
+
+---
+
+## GET /employees
+
+Returns a list of all employees.
+
+**Response**
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Employees fetched successfully`
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of employee objects. See [employee object fields](#employee-object) below.
+</ResponseField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/employees
+```
+
+**Success response**
+
+```json
+{
+  "status": "ok",
+  "message": "Employees fetched successfully",
+  "data": [
+    {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "name": "Mads Jensen",
+      "area": "Strength & Conditioning",
+      "image": "http://localhost:3042/employees/mads.jpg",
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+## GET /employee/:id
+
+Fetch a single employee by their MongoDB ObjectId.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the employee.
+</ParamField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/employee/64f1a2b3c4d5e6f7a8b9c0d1
+```
+
+---
+
+## POST /employee
+
+Create a new employee profile. Accepts `multipart/form-data` to optionally upload a profile photo.
+
+<ParamField body="name" type="string" required>
+  Full name of the employee.
+</ParamField>
+
+<ParamField body="area" type="string" required>
+  Specialization or department, e.g. `Yoga`, `Strength & Conditioning`.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Optional profile photo (multipart upload). Defaults to `no-image.png` if omitted.
+</ParamField>
+
+**Response** — `201 Created`
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Employee created successfully`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The newly created employee object.
+</ResponseField>
+
+**Example**
+
+```bash
+curl -X POST http://localhost:3042/employee \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Sara Nielsen", "area": "Yoga & Mindfulness"}'
+```
+
+---
+
+## PUT /employee
+
+Update an existing employee profile. The employee `id` must be provided; at least one of `name`, `area`, or a new `image` must also be supplied.
+
+<ParamField body="id" type="string" required>
+  MongoDB ObjectId of the employee to update.
+</ParamField>
+
+<ParamField body="name" type="string">
+  Updated name.
+</ParamField>
+
+<ParamField body="area" type="string">
+  Updated specialization.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Replacement profile photo (multipart upload).
+</ParamField>
+
+**Example**
+
+```bash
+curl -X PUT http://localhost:3042/employee \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "64f1a2b3c4d5e6f7a8b9c0d1", "area": "CrossFit & HIIT"}'
+```
+
+---
+
+## DELETE /employee/:id
+
+Permanently delete an employee profile.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the employee to delete.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X DELETE http://localhost:3042/employee/64f1a2b3c4d5e6f7a8b9c0d1 \
+  -H "Authorization: Bearer <token>"
+```
+
+**Success response**
+
+```json
+{
+  "status": "ok",
+  "message": "Employee deleted successfully",
+  "data": { "_id": "64f1a2b3c4d5e6f7a8b9c0d1", "name": "Sara Nielsen", "area": "Yoga & Mindfulness" }
+}
+```
+
+---
+
+## Employee object
+
+<ResponseField name="_id" type="string">
+  MongoDB ObjectId.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Full name.
+</ResponseField>
+
+<ResponseField name="area" type="string">
+  Specialization or department.
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  URL of the profile photo.
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 last-updated timestamp.
+</ResponseField>

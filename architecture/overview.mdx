@@ -1,0 +1,85 @@
+---
+title: 'Architecture overview'
+description: 'High-level description of how the Xtreme Fitness frontend, backend, and database fit together.'
+keywords: ['architecture', 'react', 'express', 'mongodb', 'jwt', 'rest api']
+---
+
+Xtreme Fitness is built as two independent processes: a React single-page application served by Vite on the frontend, and an Express REST API backed by MongoDB on the backend. The two communicate exclusively over HTTP — the frontend never touches the database directly.
+
+## Frontend / backend separation
+
+The frontend is a React SPA. Vite builds it into a set of static files (`index.html` plus JS/CSS bundles) that any static host or the Express server itself can serve. Once loaded in the browser, the app manages all navigation client-side via React Router — the server is never asked for a new HTML document when the user moves between pages.
+
+The backend is a standalone Node.js process running Express 5. It exposes a set of REST API endpoints that the frontend calls with `fetch`. The backend handles all database reads and writes, all authentication logic, and all file upload processing. It has no knowledge of the React component tree.
+
+## Client-server communication
+
+All data exchange between the browser and the server happens over HTTP REST. The frontend sends JSON request bodies and receives JSON responses. Protected endpoints require the request to include a JWT in the `Authorization: Bearer <token>` header — the backend middleware validates the token before the route handler runs.
+
+File uploads (for example, user profile pictures) are sent as `multipart/form-data` and processed by multer on the backend before the file path is stored in MongoDB.
+
+## MongoDB data storage
+
+MongoDB is the sole data store. Mongoose models define schemas for each resource: users, blogs, employees, exercises, messages, reviews, services, subscriptions, and workouts. The backend connects to MongoDB on startup via a shared `dbConnect` helper and then reuses that connection across all request handlers.
+
+## JWT-based authentication flow
+
+<Steps>
+  <Step title="User submits credentials">
+    The login form posts an email and password to `POST /auth/signin`. The backend locates the user in MongoDB and compares the submitted password against the stored bcrypt hash.
+  </Step>
+  <Step title="Server issues a JWT">
+    If the credentials are valid, the server signs a JWT containing the user's `_id`, `email`, `name`, `picture`, `role`, `enrolledWorkouts`, and `subscription`. The token is returned in the JSON response body.
+  </Step>
+  <Step title="Client stores the token">
+    `AuthProvider` (in `src/lib/auth/auth-context.jsx`) stores the token and writes it to the browser's local storage via the `setStoredToken` helper so that the session survives a page reload.
+  </Step>
+  <Step title="Subsequent requests attach the token">
+    The API client reads the stored token and attaches it as `Authorization: Bearer <token>` on every request that requires authentication.
+  </Step>
+  <Step title="Session restoration on reload">
+    When the app mounts, `AuthProvider` reads any stored token, validates it against `POST /auth/token`, and restores the user state. If validation fails or the token has expired, the stored token is discarded and the user is treated as unauthenticated.
+  </Step>
+</Steps>
+
+## Role-based access control
+
+Every user document in MongoDB has a `role` field. Three roles are in use:
+
+| Role | Description |
+|---|---|
+| `admin` | Full access to the admin dashboard, including blog management, message review, and moderation of reviews. |
+| `member` | Access to the member-only area (`/min-side`) which shows personal workout and subscription information. |
+| `guest` | The default role assigned to newly created accounts. Guests cannot access the member area or admin panel. |
+
+The Mongoose `user` model enforces that `admin` and `guest` accounts cannot hold a `subscription` or `enrolledWorkouts` — those fields are stripped before save and on update.
+
+On the frontend, the `RequireAuth` component wraps protected route groups. It reads the current user's role from `AuthProvider` and either renders the protected content, redirects unauthenticated visitors to `/login`, or redirects authenticated users whose role does not match to the area that is appropriate for their role.
+
+## React Router route structure
+
+All routes are declared once in `src/index.jsx`. There are three distinct route groups:
+
+**Public marketing routes** sit under a shared `<Layout>` component that renders the site-wide navigation bar and footer. These routes are accessible to all visitors regardless of authentication state:
+
+- `/` — Home
+- `/blog` and `/blog/:blogId` — Blog list and detail
+- `/tjenester` — Services
+- `/traenere` — Trainers
+- `/priser` — Pricing
+- `/om-os` — About
+- `/kontakt` — Contact
+- `/login` — Login form
+
+**Admin routes** sit under a `<RequireAuth allowRoles={["admin"]}>` guard followed by `<AdminLayout>`. This gives the admin section its own shell, separate from the public site chrome:
+
+- `/admin` — Dashboard
+- `/admin/blogs` — Blog management
+- `/admin/messages` — Message inbox
+- `/admin/reviews` — Review moderation
+
+**Member route** sits under a `<RequireAuth allowRoles={["member"]}>` guard without the admin shell:
+
+- `/min-side` — Member profile and workout overview
+
+All routes use React's `lazy()` so each screen is only downloaded when first visited. A `<Suspense>` boundary wraps the entire route tree and shows a loading indicator while the chunk loads.

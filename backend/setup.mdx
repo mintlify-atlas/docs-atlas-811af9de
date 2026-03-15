@@ -1,0 +1,121 @@
+---
+title: "Backend setup"
+description: "Install, configure, and run the Xtreme Fitness backend server."
+---
+
+The backend is an Express.js API server that connects to MongoDB and serves all data for the Xtreme Fitness application. It runs on port `3042` by default and is compatible with both the included backend and the original provided backend.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** v18 or later
+- **npm** v9 or later
+- **MongoDB** — local instance (e.g. `mongodb://127.0.0.1:27017`) or a remote MongoDB URI
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to the backend directory">
+    ```bash
+    cd backend
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+
+    This installs all required packages including Express, Mongoose, `jsonwebtoken`, `bcryptjs`, `nodemon`, and others listed in `package.json`.
+  </Step>
+
+  <Step title="Create the environment file">
+    Create a file named `.env.local` in the `backend/` directory with the following content:
+
+    ```bash .env.local
+    # Server
+    NODE_ENV=development
+    SERVER_PORT=3042
+    SERVER_HOST=http://localhost:3042
+
+    # MongoDB
+    MONGODB_URI=mongodb://127.0.0.1:27017/mcd-xtreme-fitness
+
+    # JWT
+    JWT_EXPIRES_IN="24h"
+    JWT_SECRET="8e18fa26acc704d3ca37fea29e17e8e024423a7c3eab4b76390a94ac579c20f0"
+
+    # Flags
+    USE_JWT=false
+    ```
+
+    <Warning>
+      Never commit `.env.local` to version control. Replace `JWT_SECRET` with a unique, randomly generated value in any non-development environment.
+    </Warning>
+  </Step>
+
+  <Step title="Seed the database">
+    Run the seed script to populate MongoDB with initial data (subscriptions, workouts, users, services, reviews, employees, messages, blogs, and exercises):
+
+    ```bash
+    npm run "Opret Database"
+    ```
+
+    <Note>
+      You can re-run this script at any time to reset the database to its original state. You can also rename the database by changing the `MONGODB_URI` value in `.env.local`.
+    </Note>
+  </Step>
+
+  <Step title="Start the server">
+    ```bash
+    npm run "Start Server"
+    ```
+
+    This starts the server with `nodemon`, which automatically restarts on file changes. The API is available at `http://localhost:3042`.
+  </Step>
+</Steps>
+
+## Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `SERVER_PORT` | `3042` | Port the HTTP server listens on |
+| `SERVER_HOST` | `http://localhost:3042` | Base URL used for default image paths |
+| `MONGODB_URI` | — | MongoDB connection string (required) |
+| `DB_NAME` | `mcd-xtreme-fitness` | Database name (overrides the name in the URI) |
+| `JWT_SECRET` | — | Secret key used to sign and verify JWTs |
+| `JWT_EXPIRES_IN` | — | JWT expiry duration (e.g. `"24h"`) |
+| `USE_JWT` | `false` | Set to `true` to enforce JWT authentication on protected routes |
+
+## Verifying the setup
+
+After seeding and starting the server, confirm everything is working by requesting the users list:
+
+```bash
+curl http://localhost:3042/users
+```
+
+You should receive a response with three seeded users: an **admin**, a **member**, and a **guest**.
+
+<Tip>
+  If you use Postman, import the collection from `[mcd]/postman/` and create an environment with a `server_path` variable set to `http://localhost:3042`.
+</Tip>
+
+## Scripts reference
+
+<CodeGroup>
+
+```bash Install dependencies
+npm install
+```
+
+```bash Seed the database
+npm run "Opret Database"
+```
+
+```bash Start the server
+npm run "Start Server"
+```
+
+</CodeGroup>

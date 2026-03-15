@@ -1,0 +1,213 @@
+---
+title: "Services"
+description: "Manage the gym's offered services"
+---
+
+Service endpoints provide full CRUD access to the gym's service offerings. Read operations are public; write operations require authentication.
+
+<Note>
+  `POST`, `PUT`, and `DELETE` require a valid `Authorization: Bearer <token>` header.
+</Note>
+
+---
+
+## GET /services
+
+Returns a list of all services.
+
+**Response**
+
+<ResponseField name="message" type="string">
+  `Services fetched successfully`
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of service objects. See [service object fields](#service-object) below.
+</ResponseField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/services
+```
+
+**Success response**
+
+```json
+{
+  "message": "Services fetched successfully",
+  "data": [
+    {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "title": "Personal Training",
+      "teaser": "One-on-one sessions tailored to your goals.",
+      "content": "Our certified personal trainers...",
+      "icon": "http://localhost:3042/services/service_icons/pt-icon.svg",
+      "image": "http://localhost:3042/services/personal-training.jpg",
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+## GET /service/:id
+
+Fetch a single service by its MongoDB ObjectId.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the service.
+</ParamField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/service/64f1a2b3c4d5e6f7a8b9c0d1
+```
+
+---
+
+## POST /service
+
+Create a new service. Accepts `multipart/form-data` to optionally upload a cover image and/or an icon.
+
+<ParamField body="title" type="string" required>
+  Name of the service.
+</ParamField>
+
+<ParamField body="teaser" type="string" required>
+  Short description shown in listing views.
+</ParamField>
+
+<ParamField body="content" type="string" required>
+  Full description of the service.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Optional cover image (multipart field name: `image`). Defaults to `no-image.png` if omitted.
+</ParamField>
+
+<ParamField body="icon" type="file">
+  Optional service icon (multipart field name: `icon`). Stored under `/services/service_icons/`.
+</ParamField>
+
+**Response** — `201 Created`
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Service created successfully`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The newly created service object.
+</ResponseField>
+
+**Example**
+
+```bash
+curl -X POST http://localhost:3042/service \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Group Classes",
+    "teaser": "Fun and energetic classes for all fitness levels.",
+    "content": "Join one of our 20+ weekly group classes including yoga, spin, and HIIT."
+  }'
+```
+
+---
+
+## PUT /service
+
+Update an existing service. The service `id` must be provided; all other fields are optional.
+
+<ParamField body="id" type="string" required>
+  MongoDB ObjectId of the service to update.
+</ParamField>
+
+<ParamField body="title" type="string">
+  Updated service name.
+</ParamField>
+
+<ParamField body="teaser" type="string">
+  Updated short description.
+</ParamField>
+
+<ParamField body="content" type="string">
+  Updated full description.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Replacement cover image (multipart upload). The previous image is deleted from the server.
+</ParamField>
+
+<ParamField body="icon" type="file">
+  Replacement icon (multipart upload). The previous icon is deleted from the server.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X PUT http://localhost:3042/service \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "64f1a2b3c4d5e6f7a8b9c0d1", "title": "Group Fitness Classes"}'
+```
+
+---
+
+## DELETE /service/:id
+
+Permanently delete a service. The associated image and icon files are also removed from the server.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the service to delete.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X DELETE http://localhost:3042/service/64f1a2b3c4d5e6f7a8b9c0d1 \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+## Service object
+
+<ResponseField name="_id" type="string">
+  MongoDB ObjectId.
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Name of the service.
+</ResponseField>
+
+<ResponseField name="teaser" type="string">
+  Short description.
+</ResponseField>
+
+<ResponseField name="content" type="string">
+  Full description.
+</ResponseField>
+
+<ResponseField name="icon" type="string">
+  URL of the service icon. Optional.
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  URL of the cover image.
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 last-updated timestamp.
+</ResponseField>

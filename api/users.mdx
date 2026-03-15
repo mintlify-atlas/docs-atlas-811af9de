@@ -1,0 +1,291 @@
+---
+title: "Users"
+description: "Manage user accounts and workout enrollment"
+---
+
+User endpoints cover creating accounts, updating profiles, and managing which workouts a user is enrolled in.
+
+<Note>
+  Write operations (`POST`, `PUT`, `DELETE`) require a valid `Authorization: Bearer <token>` header.
+</Note>
+
+---
+
+## GET /users
+
+Returns a list of all user accounts. Passwords are never included in responses.
+
+**Response**
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Users fetched successfully`
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of user objects. See [user object fields](#user-object) below.
+</ResponseField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/users
+```
+
+---
+
+## GET /user/:id
+
+Fetch a single user by their MongoDB ObjectId. The response includes populated `enrolledWorkouts` and `subscription` references.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the user.
+</ParamField>
+
+**Response**
+
+<ResponseField name="status" type="string">
+  `ok`, `not_found`, or `error`.
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The user object. See [user object fields](#user-object) below.
+</ResponseField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/user/64f1a2b3c4d5e6f7a8b9c0d1
+```
+
+---
+
+## POST /user
+
+Create a new user account. Accepts `multipart/form-data` to optionally upload a profile picture.
+
+<ParamField body="name" type="string" required>
+  Full display name.
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  Email address. Must be unique.
+</ParamField>
+
+<ParamField body="role" type="string" required>
+  User role. Common values: `admin`, `member`, `guest`.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Plaintext password. Minimum 6 characters.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Optional profile picture (multipart upload). If omitted, defaults to the server's `no-user.jpg` image.
+</ParamField>
+
+**Response** — `201 Created`
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The newly created user object (without `hashedPassword`).
+</ResponseField>
+
+**Example**
+
+```bash
+curl -X POST http://localhost:3042/user \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Jane Doe", "email": "jane@xtremefit.dk", "role": "member", "password": "secret123"}'
+```
+
+---
+
+## PUT /user
+
+Update an existing user. At least one field must be provided. Accepts `multipart/form-data` to update the profile picture.
+
+<ParamField body="id" type="string" required>
+  MongoDB ObjectId of the user to update.
+</ParamField>
+
+<ParamField body="name" type="string">
+  New display name.
+</ParamField>
+
+<ParamField body="email" type="string">
+  New email address.
+</ParamField>
+
+<ParamField body="role" type="string">
+  New role.
+</ParamField>
+
+<ParamField body="password" type="string">
+  New plaintext password. Minimum 6 characters.
+</ParamField>
+
+<ParamField body="enrolledWorkouts" type="array">
+  Replace the user's enrolled workout IDs. Not available for `admin` or `guest` roles.
+</ParamField>
+
+<ParamField body="subscription" type="string">
+  ObjectId of the subscription plan to assign. Not available for `admin` or `guest` roles.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Replacement profile picture (multipart upload).
+</ParamField>
+
+**Example**
+
+```bash
+curl -X PUT http://localhost:3042/user \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "64f1a2b3c4d5e6f7a8b9c0d1", "name": "Jane Smith"}'
+```
+
+---
+
+## DELETE /user/:id
+
+Permanently delete a user account.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the user to delete.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X DELETE http://localhost:3042/user/64f1a2b3c4d5e6f7a8b9c0d1 \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+## POST /user/:id/enroll
+
+Enroll a user in one or more workouts. Accepts either a single `workoutId` or an array `workoutIds`. Duplicate IDs are ignored (`$addToSet` semantics).
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the user.
+</ParamField>
+
+<ParamField body="workoutId" type="string">
+  Single workout ObjectId to enroll.
+</ParamField>
+
+<ParamField body="workoutIds" type="array">
+  Array of workout ObjectIds to enroll. Takes precedence over `workoutId` if both are provided.
+</ParamField>
+
+**Response**
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Workout(s) added to user!`
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  The updated user object with `enrolledWorkouts` populated.
+</ResponseField>
+
+**Example**
+
+```bash
+curl -X POST http://localhost:3042/user/64f1a2b3c4d5e6f7a8b9c0d1/enroll \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"workoutId": "64f9a1b2c3d4e5f6a7b8c9d0"}'
+```
+
+---
+
+## DELETE /user/:id/enroll/:workoutId
+
+Remove a specific workout from a user's enrollment list.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the user.
+</ParamField>
+
+<ParamField path="workoutId" type="string" required>
+  MongoDB ObjectId of the workout to remove.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X DELETE \
+  http://localhost:3042/user/64f1a2b3c4d5e6f7a8b9c0d1/enroll/64f9a1b2c3d4e5f6a7b8c9d0 \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+## GET /user/:id/workouts
+
+Returns the list of workouts a user is enrolled in.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the user.
+</ParamField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/user/64f1a2b3c4d5e6f7a8b9c0d1/workouts \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+## User object
+
+<ResponseField name="_id" type="string">
+  MongoDB ObjectId.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Full display name.
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Email address. Unique.
+</ResponseField>
+
+<ResponseField name="picture" type="string">
+  URL of the user's profile picture.
+</ResponseField>
+
+<ResponseField name="role" type="string">
+  User role (`admin`, `member`, `guest`, etc.).
+</ResponseField>
+
+<ResponseField name="enrolledWorkouts" type="array">
+  Array of workout ObjectIds (or populated workout objects when fetched via `GET /user/:id`). Empty or absent for `admin` and `guest` roles.
+</ResponseField>
+
+<ResponseField name="subscription" type="string | object">
+  ObjectId or populated subscription object. Absent for `admin` and `guest` roles.
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 last-updated timestamp.
+</ResponseField>

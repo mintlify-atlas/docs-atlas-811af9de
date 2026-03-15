@@ -1,0 +1,210 @@
+---
+title: "Subscriptions"
+description: "Manage membership subscription plans"
+---
+
+Subscription endpoints provide full CRUD access to the gym's membership plans. Read operations are public; write operations require authentication.
+
+<Note>
+  `POST`, `PUT`, and `DELETE` require a valid `Authorization: Bearer <token>` header.
+</Note>
+
+---
+
+## GET /subscriptions
+
+Returns a list of all subscription plans.
+
+**Response**
+
+<ResponseField name="message" type="string">
+  `Subscriptions fetched successfully`
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of subscription objects. See [subscription object fields](#subscription-object) below.
+</ResponseField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/subscriptions
+```
+
+**Success response**
+
+```json
+{
+  "message": "Subscriptions fetched successfully",
+  "data": [
+    {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "title": "Gold Membership",
+      "list": ["Unlimited gym access", "2 personal training sessions/month", "Free towel service"],
+      "price": 499,
+      "image": "http://localhost:3042/subscriptions/gold.jpg",
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+## GET /subscription/:id
+
+Fetch a single subscription plan by its MongoDB ObjectId.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the subscription plan.
+</ParamField>
+
+**Example**
+
+```bash
+curl http://localhost:3042/subscription/64f1a2b3c4d5e6f7a8b9c0d1
+```
+
+---
+
+## POST /subscription
+
+Create a new subscription plan. Accepts `multipart/form-data` to optionally upload a cover image.
+
+<ParamField body="title" type="string" required>
+  Name of the membership plan.
+</ParamField>
+
+<ParamField body="price" type="number" required>
+  Monthly price in the local currency (numeric).
+</ParamField>
+
+<ParamField body="list" type="array">
+  Array of feature strings describing what is included in the plan.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Optional cover image (multipart upload). Defaults to `no-image.png` if omitted.
+</ParamField>
+
+**Response** — `201 Created`
+
+<ResponseField name="status" type="string">
+  `ok` on success.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  `Subscription created successfully`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The newly created subscription object.
+</ResponseField>
+
+**Example**
+
+```bash
+curl -X POST http://localhost:3042/subscription \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Silver Membership",
+    "price": 299,
+    "list": ["Unlimited gym access", "Access to group classes"]
+  }'
+```
+
+---
+
+## PUT /subscription
+
+Update an existing subscription plan. The subscription `id` must be provided; all other fields are optional.
+
+<ParamField body="id" type="string" required>
+  MongoDB ObjectId of the subscription plan to update.
+</ParamField>
+
+<ParamField body="title" type="string">
+  Updated plan name.
+</ParamField>
+
+<ParamField body="price" type="number">
+  Updated price.
+</ParamField>
+
+<ParamField body="list" type="array">
+  Updated feature list.
+</ParamField>
+
+<ParamField body="image" type="file">
+  Replacement cover image (multipart upload). The previous image is deleted from the server.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X PUT http://localhost:3042/subscription \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "64f1a2b3c4d5e6f7a8b9c0d1", "price": 349}'
+```
+
+---
+
+## DELETE /subscription/:id
+
+Permanently delete a subscription plan. The associated image file is also removed from the server.
+
+<ParamField path="id" type="string" required>
+  MongoDB ObjectId of the subscription plan to delete.
+</ParamField>
+
+**Example**
+
+```bash
+curl -X DELETE http://localhost:3042/subscription/64f1a2b3c4d5e6f7a8b9c0d1 \
+  -H "Authorization: Bearer <token>"
+```
+
+**Success response**
+
+```json
+{
+  "status": "ok",
+  "message": "Subscription deleted successfully",
+  "data": { "_id": "64f1a2b3c4d5e6f7a8b9c0d1", "title": "Silver Membership", "price": 299 }
+}
+```
+
+---
+
+## Subscription object
+
+<ResponseField name="_id" type="string">
+  MongoDB ObjectId.
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Name of the membership plan.
+</ResponseField>
+
+<ResponseField name="list" type="array">
+  Array of strings describing what is included.
+</ResponseField>
+
+<ResponseField name="price" type="number">
+  Monthly price.
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  URL of the cover image.
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 last-updated timestamp.
+</ResponseField>
